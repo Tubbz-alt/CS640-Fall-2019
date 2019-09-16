@@ -1,0 +1,18 @@
+# Usage
+
+- To compile Iperfer
+
+    javac Iperfer.java
+
+- To start a server
+
+    java Iperfer -s -p <listen port>
+    
+    Example: java Iperfer -s -p 12345
+
+
+- To start a client 
+
+    java Iperfer -c -h <server hostname> -p <server port> -t <time>
+    
+    Example: java Iperfer -c -h localhost -p 12345 -t 1
