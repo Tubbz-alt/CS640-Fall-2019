@@ -5,10 +5,9 @@ import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Iterator;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.MACAddress;
-
-
 
 /**
  * @author Aaron Gember-Jacobson
@@ -16,11 +15,11 @@ import net.floodlightcontroller.packet.MACAddress;
 public class Switch extends Device {
 	/**
 	 * Creates a router for a specific host.
-	 * 
+	 *
 	 * @param host hostname for the router
 	 */
 
-	public long TIMEOUT = 15000;
+	private long TIMEOUT = 15000;
 
 	private Map<MACAddress, SwitchTableEntry> switchTable = new HashMap<>();
 
@@ -30,31 +29,39 @@ public class Switch extends Device {
 
 	/**
 	 * Handle an Ethernet packet received on a specific interface.
-	 * 
+	 *
 	 * @param etherPacket the Ethernet packet that was received
 	 * @param inIface     the interface on which the packet was received
 	 */
- @Override
+	@Override
 	public void handlePacket(Ethernet etherPacket, Iface inIface) {
 		System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n", "\n\t"));
 
 		// Remove timeout
-		switchTable.values().removeIf(value -> System.currentTimeMillis() - value.timeAdded > TIMEOUT);
+		Iterator<Map.Entry<MACAddress, SwitchTableEntry>> iterator = switchTable.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Map.Entry<MACAddress, SwitchTableEntry> entry = iterator.next();
+			if (System.currentTimeMillis() - entry.getValue().timeAdded > TIMEOUT) {
+				switchTable.remove(entry.getKey());
+			}
+		}
 
-		// Add source mac adress to table
+		// Add source mac address to table
 		SwitchTableEntry srcEntry = switchTable.get(etherPacket.getSourceMAC());
 		if (srcEntry != null) { // update timeout
 			srcEntry.updateTimeout();
 		} else { // add entry
 			switchTable.put(etherPacket.getSourceMAC(), new SwitchTableEntry(inIface.getName()));
 		}
-		
+
 		// Send the packet
 		SwitchTableEntry destEntry = switchTable.get(etherPacket.getDestinationMAC());
 		if (destEntry != null) { // send packet
 			super.sendPacket(etherPacket, interfaces.get(destEntry.interfaceName));
 		} else { // flood
-			interfaces.values().forEach(e -> super.sendPacket(etherPacket, e));
+			for (Iface e : interfaces.values()) {
+				super.sendPacket(etherPacket, e);
+			}
 		}
 	}
 
@@ -62,12 +69,12 @@ public class Switch extends Device {
 		String interfaceName;
 		long timeAdded;
 
-		public SwitchTableEntry(String name) {
+		SwitchTableEntry(String name) {
 			this.interfaceName = name;
 			this.timeAdded = System.currentTimeMillis();
 		}
 
-		public void updateTimeout() {
+		void updateTimeout() {
 			this.timeAdded = System.currentTimeMillis();
 		}
 	}
