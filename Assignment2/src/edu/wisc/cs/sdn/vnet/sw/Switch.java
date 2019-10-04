@@ -3,9 +3,9 @@ package edu.wisc.cs.sdn.vnet.sw;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Iterator;
+
+import java.util.*;
+
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.MACAddress;
 
@@ -38,9 +38,7 @@ public class Switch extends Device {
 		System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n", "\n\t"));
 
 		// Remove timeout
-		Iterator<Map.Entry<MACAddress, SwitchTableEntry>> iterator = switchTable.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Map.Entry<MACAddress, SwitchTableEntry> entry = iterator.next();
+		for (Map.Entry<MACAddress, SwitchTableEntry> entry : new HashSet<>(switchTable.entrySet())) {
 			if (System.currentTimeMillis() - entry.getValue().timeAdded > TIMEOUT) {
 				switchTable.remove(entry.getKey());
 			}
@@ -60,7 +58,8 @@ public class Switch extends Device {
 			super.sendPacket(etherPacket, interfaces.get(destEntry.interfaceName));
 		} else { // flood
 			for (Iface e : interfaces.values()) {
-				super.sendPacket(etherPacket, e);
+				if (!e.getName().equals(inIface.getName()))
+					super.sendPacket(etherPacket, e);
 			}
 		}
 	}
