@@ -38,11 +38,18 @@ public class RouteTable {
 	public RouteEntry lookup(int ip) {
 		synchronized (this.entries) {
 			RouteEntry maxEntry = null;
-			int diff = Integer.MAX_VALUE;
+			int minNumberOfTrailingZeros = Integer.MAX_VALUE;
+
 			for (RouteEntry entry : this.entries) {
-				int currDiff = entry.getDestinationAddress() ^ ip;
-				if (diff > currDiff) {
-					diff = currDiff;
+				int expectedSubnet = ip & entry.getMaskAddress();
+				int actualSubnet = entry.getDestinationAddress() & entry.getMaskAddress();
+
+				if (actualSubnet != expectedSubnet)
+					continue;
+
+				int numberOfTrailingZeros = Integer.numberOfTrailingZeros(entry.getMaskAddress());
+				if (numberOfTrailingZeros < minNumberOfTrailingZeros) {
+					minNumberOfTrailingZeros = numberOfTrailingZeros;
 					maxEntry = entry;
 				}
 			}
