@@ -113,6 +113,9 @@ public class Router extends Device {
 		int destIP = entry.getGatewayAddress() != 0 ? entry.getGatewayAddress() : payload.getDestinationAddress();
 		etherPacket.setDestinationMACAddress(this.arpCache.lookup(destIP).getMac().toString());
 
+		if (entry.getInterface().getName().equals(inIface.getName())) 
+			return;
+
 		// recompute checksum
 		payload.resetChecksum();
 		payload.serialize();

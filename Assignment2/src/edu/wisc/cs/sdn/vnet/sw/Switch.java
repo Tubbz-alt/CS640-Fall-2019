@@ -76,5 +76,13 @@ public class Switch extends Device {
 		void updateTimeout() {
 			this.timeAdded = System.currentTimeMillis();
 		}
+
+		@Override
+		public String toString() {
+			return "SwitchTableEntry{" +
+					"interfaceName='" + interfaceName + '\'' +
+					", timeAdded=" + timeAdded +
+					'}';
+		}
 	}
 }
