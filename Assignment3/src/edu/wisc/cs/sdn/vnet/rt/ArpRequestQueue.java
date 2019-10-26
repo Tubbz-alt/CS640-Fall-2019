@@ -22,15 +22,13 @@ class ArpRequestQueue {
     private ArpHandler arpHandler;
     private Iface outIface;
     private final Queue<ArpRequestQueueElement> queue;
-    private Runnable runnable;
     private Thread thread;
-
 
     ArpRequestQueue(final ArpHandler arpHandler, final int ipAddress, final Iface outIface) {
         this.arpHandler = arpHandler;
         this.outIface = outIface;
         this.queue = new LinkedList<>();
-        this.runnable = new Runnable() {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 for (int i = 0; i < 3; i++) {
@@ -51,7 +49,7 @@ class ArpRequestQueue {
             }
         };
 
-        this.thread = new Thread(this.runnable);
+        this.thread = new Thread(runnable);
         this.thread.start();
     }
 
