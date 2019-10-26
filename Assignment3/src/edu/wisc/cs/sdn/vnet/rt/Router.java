@@ -5,6 +5,7 @@ import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 
 import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -85,7 +86,92 @@ public class Router extends Device
 		/********************************************************************/
 		/* TODO: Handle packets                                             */
 		
+		switch(etherPacket.getEtherType())
+		{
+		case Ethernet.TYPE_IPv4:
+			this.handleIpPacket(etherPacket, inIface);
+			break;
+		// Ignore all other packet types, for now
+		}
 		
 		/********************************************************************/
 	}
+	
+	private void handleIpPacket(Ethernet etherPacket, Iface inIface)
+	{
+		// Make sure it's an IP packet
+		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4)
+		{ return; }
+		
+		// Get IP header
+		IPv4 ipPacket = (IPv4)etherPacket.getPayload();
+        System.out.println("Handle IP packet");
+
+        // Verify checksum
+        short origCksum = ipPacket.getChecksum();
+        ipPacket.resetChecksum();
+        byte[] serialized = ipPacket.serialize();
+        ipPacket.deserialize(serialized, 0, serialized.length);
+        short calcCksum = ipPacket.getChecksum();
+        if (origCksum != calcCksum)
+        { return; }
+        
+        // Check TTL
+        ipPacket.setTtl((byte)(ipPacket.getTtl()-1));
+        if (0 == ipPacket.getTtl())
+        { return; }
+        
+        // Reset checksum now that TTL is decremented
+        ipPacket.resetChecksum();
+        
+        // Check if packet is destined for one of router's interfaces
+        for (Iface iface : this.interfaces.values())
+        {
+        	if (ipPacket.getDestinationAddress() == iface.getIpAddress())
+        	{ return; }
+        }
+		
+        // Do route lookup and forward
+        this.forwardIpPacket(etherPacket, inIface);
+	}
+
+    private void forwardIpPacket(Ethernet etherPacket, Iface inIface)
+    {
+        // Make sure it's an IP packet
+		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4)
+		{ return; }
+        System.out.println("Forward IP packet");
+		
+		// Get IP header
+		IPv4 ipPacket = (IPv4)etherPacket.getPayload();
+        int dstAddr = ipPacket.getDestinationAddress();
+
+        // Find matching route table entry 
+        RouteEntry bestMatch = this.routeTable.lookup(dstAddr);
+
+        // If no entry matched, do nothing
+        if (null == bestMatch)
+        { return; }
+
+        // Make sure we don't sent a packet back out the interface it came in
+        Iface outIface = bestMatch.getInterface();
+        if (outIface == inIface)
+        { return; }
+
+        // Set source MAC address in Ethernet header
+        etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
+
+        // If no gateway, then nextHop is IP destination
+        int nextHop = bestMatch.getGatewayAddress();
+        if (0 == nextHop)
+        { nextHop = dstAddr; }
+
+        // Set destination MAC address in Ethernet header
+        ArpEntry arpEntry = this.arpCache.lookup(nextHop);
+        if (null == arpEntry)
+        { return; }
+        etherPacket.setDestinationMACAddress(arpEntry.getMac().toBytes());
+        
+        this.sendPacket(etherPacket, outIface);
+    }
 }
