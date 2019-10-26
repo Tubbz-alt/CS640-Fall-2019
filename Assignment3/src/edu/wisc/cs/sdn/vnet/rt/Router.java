@@ -147,24 +147,6 @@ public class Router extends Device
         this.forwardIpPacket(etherPacket, inIface);
 	}
 
-	private MACAddress getMacByIp(int ipAddr) {
-		// Find matching route table entry
-		RouteEntry bestMatch = this.routeTable.lookup(ipAddr);
-
-		// If no entry matched, do nothing
-		if (null == bestMatch) { return null; }
-
-		// If no gateway, then nextHop is IP destination
-		int nextHop = bestMatch.getGatewayAddress();
-		if (0 == nextHop) { nextHop = ipAddr; }
-
-		// Set destination MAC address in Ethernet header
-		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
-		if (null == arpEntry) { return null; }
-
-		return arpEntry.getMac();
-	}
-
 	private void forwardIpPacket(Ethernet etherPacket, Iface inIface)
     {
         // Make sure it's an IP packet
@@ -208,6 +190,24 @@ public class Router extends Device
 
         this.sendPacket(etherPacket, outIface);
     }
+
+	private MACAddress getMacByIp(int ipAddr) {
+		// Find matching route table entry
+		RouteEntry bestMatch = this.routeTable.lookup(ipAddr);
+
+		// If no entry matched, do nothing
+		if (null == bestMatch) { return null; }
+
+		// If no gateway, then nextHop is IP destination
+		int nextHop = bestMatch.getGatewayAddress();
+		if (0 == nextHop) { nextHop = ipAddr; }
+
+		// Set destination MAC address in Ethernet header
+		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
+		if (null == arpEntry) { return null; }
+
+		return arpEntry.getMac();
+	}
 
 	private void sendIcmpMessage(Iface inIface, IPv4 ipPacket, int icmpType, int icmpCode) {
 		Ethernet ether = getEthernetPacket(inIface, ipPacket, icmpType, icmpCode);
