@@ -1,15 +1,11 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
-import java.nio.ByteBuffer;
-
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.ARP;
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.ICMP;
-import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.packet.MACAddress;
+import net.floodlightcontroller.packet.*;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -33,6 +29,12 @@ public class Router extends Device
 	ArpHandler arpHandler;
 
 	/**
+	 * RIP handler for the router
+	 */
+
+	RIPHandler ripHandler;
+
+	/**
 	 * Creates a router for a specific host.
 	 * @param host hostname for the router
 	 */
@@ -43,6 +45,7 @@ public class Router extends Device
 		this.arpCache = new ArpCache();
 		this.icmpHandler = new ICMPHandler(this);
 		this.arpHandler = new ArpHandler(this);
+		this.ripHandler = new RIPHandler(this);
 	}
 
 	/**
