@@ -3,9 +3,7 @@ package edu.wisc.cs.sdn.vnet.rt;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.packet.MACAddress;
+import net.floodlightcontroller.packet.*;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -134,6 +132,48 @@ public class Router extends Device
         // Do route lookup and forward
         this.forwardIpPacket(etherPacket, inIface);
 	}
+
+	private void sendIcmpMessage(Iface inIface, IPv4 ipPacket, int icmpType, int icmpCode) {
+		Ethernet ether = new Ethernet();
+		IPv4 ip = new IPv4();
+		ICMP icmp = new ICMP();
+		Data data = new Data();
+
+		// ether
+		ether.setEtherType(Ethernet.TYPE_IPv4);
+		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
+
+		// destinationMAC
+		MACAddress destinationMACAddress = getMacByIp(ipPacket.getSourceAddress());
+		if (destinationMACAddress == null) return;
+		ether.setDestinationMACAddress(destinationMACAddress.toBytes());
+
+		// ip
+		ip.setTtl((byte) 64);
+		ip.setProtocol(IPv4.PROTOCOL_ICMP);
+		ip.setSourceAddress(inIface.getIpAddress());
+		ip.setDestinationAddress(ipPacket.getSourceAddress());
+
+		// icmp
+		icmp.setIcmpType((byte) icmpType);
+		icmp.setIcmpCode((byte) icmpCode);
+
+		// data
+		int ipHeaderNumBytes = ipPacket.getHeaderLength() * 4;
+		int icmpDataNumBytes = 4 + ipHeaderNumBytes + 8;
+		byte[] icmpDataBytes = new byte[icmpDataNumBytes];
+		byte[] ipPacketBytes = ipPacket.serialize();
+
+		System.arraycopy(ipPacketBytes, 0, icmpDataBytes, 4, icmpDataNumBytes - 4);
+		data.setData(icmpDataBytes);
+
+		ether.setPayload(ip);
+		ip.setPayload(icmp);
+		icmp.setPayload(data);
+
+		sendPacket(ether, inIface);
+	}
+
 
 	private MACAddress getMacByIp(int ipAddr) {
 		// Find matching route table entry
