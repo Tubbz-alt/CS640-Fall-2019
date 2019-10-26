@@ -38,7 +38,7 @@ public class Router extends Device
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
 		this.icmpHandler = new ICMPHandler(this);
-		this.arpHandler = new ArpHandler();
+		this.arpHandler = new ArpHandler(this);
 	}
 
 	/**
@@ -112,8 +112,8 @@ public class Router extends Device
 		switch (arpPacket.getOpCode()) {
 			case ARP.OP_REQUEST:
 				if (targetIp != inIface.getIpAddress()) return;
-				Ethernet ether = arpHandler.getReplyPayload(inIface, etherPacket, arpPacket);
-				sendPacket(ether, inIface);
+				arpHandler.sendReply(inIface, etherPacket, arpPacket);
+				break;
 		}
 
 
@@ -151,8 +151,7 @@ public class Router extends Device
         // Check if packet is destined for one of router's interfaces
 		for (Iface iface : this.interfaces.values()) {
 			if (ipPacket.getDestinationAddress() == iface.getIpAddress()) {
-				byte protocol = ipPacket.getProtocol();
-				switch (protocol) {
+				switch (ipPacket.getProtocol()) {
 					case IPv4.PROTOCOL_UDP:
 					case IPv4.PROTOCOL_TCP:
 						icmpHandler.sendMessage(inIface, ipPacket, 3, 3);
@@ -162,6 +161,7 @@ public class Router extends Device
 						if (icmp.getIcmpType() == 8) {
 							icmpHandler.sendEcho(inIface, ipPacket);
 						}
+					default:
 						return;
 				}
 			}
