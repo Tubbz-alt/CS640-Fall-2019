@@ -60,7 +60,7 @@ class ArpHandler {
         router.sendPacket(ether, inIface);
     }
 
-    void generateRequest(Iface inIface, int ipAddr) {
+    void generateRequest(Iface inIface, Ethernet ethernetPacket, int ipAddr) {
         synchronized (requestMap) {
             ArpRequestQueue arpRequestQueue = requestMap.get(ipAddr);
             if (arpRequestQueue == null) {
@@ -68,6 +68,7 @@ class ArpHandler {
                 arpRequestQueue.startSendingRequest();
                 requestMap.put(ipAddr, arpRequestQueue);
             }
+            arpRequestQueue.add(ethernetPacket);
         }
     }
 }

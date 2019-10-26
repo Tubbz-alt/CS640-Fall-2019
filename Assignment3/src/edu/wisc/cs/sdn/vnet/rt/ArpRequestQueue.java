@@ -10,7 +10,7 @@ class ArpRequestQueue {
     private ArpHandler arpHandler;
     private Iface inIface;
     private int IpAddress;
-    private Queue<Ethernet> queue;
+    private final Queue<Ethernet> queue;
     private Runnable runnable;
     private Thread thread;
 
@@ -39,6 +39,12 @@ class ArpRequestQueue {
 
     void startSendingRequest() {
         this.thread.start();
+    }
+
+    void add(Ethernet etherPacket) {
+        synchronized (queue) {
+            queue.add(etherPacket);
+        }
     }
 
 

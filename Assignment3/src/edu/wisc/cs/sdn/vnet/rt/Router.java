@@ -21,12 +21,12 @@ public class Router extends Device
 	/**
 	 * ICMP handler for the router
 	 */
-	private ICMPHandler icmpHandler;
+	ICMPHandler icmpHandler;
 
 	/**
 	 * ARP handler for the router
 	 */
-	private ArpHandler arpHandler;
+	ArpHandler arpHandler;
 
 	/**
 	 * Creates a router for a specific host.
@@ -210,7 +210,7 @@ public class Router extends Device
         // Set destination MAC address in Ethernet header
         ArpEntry arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry) {
-			arpHandler.generateRequest(inIface, nextHop);
+			arpHandler.generateRequest(inIface, etherPacket, nextHop);
 //			icmpHandler.sendMessage(inIface, ipPacket, 3, 1);
 			return;
 		}
