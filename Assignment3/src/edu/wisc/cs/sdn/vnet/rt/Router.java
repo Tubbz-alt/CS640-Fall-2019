@@ -18,7 +18,15 @@ public class Router extends Device
 	/** ARP cache for the router */
 	private ArpCache arpCache;
 
+	/**
+	 * ICMP handler for the router
+	 */
 	private ICMPHandler icmpHandler;
+
+	/**
+	 * ARP handler for the router
+	 */
+	private ArpHandler arpHandler;
 
 	/**
 	 * Creates a router for a specific host.
@@ -30,6 +38,7 @@ public class Router extends Device
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
 		this.icmpHandler = new ICMPHandler(this);
+		this.arpHandler = new ArpHandler();
 	}
 
 	/**
@@ -103,7 +112,7 @@ public class Router extends Device
 		switch (arpPacket.getOpCode()) {
 			case ARP.OP_REQUEST:
 				if (targetIp != inIface.getIpAddress()) return;
-				Ethernet ether = ArpHandler.getReplyPayload(inIface, etherPacket, arpPacket);
+				Ethernet ether = arpHandler.getReplyPayload(inIface, etherPacket, arpPacket);
 				sendPacket(ether, inIface);
 		}
 

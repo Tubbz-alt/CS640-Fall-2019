@@ -5,7 +5,7 @@ import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 
 class ArpHandler {
-    private static ARP getReplyHeader(Iface inIface, ARP inArpPacket) {
+    private ARP getReplyHeader(Iface inIface, ARP inArpPacket) {
         return new ARP()
                 .setHardwareType(ARP.HW_TYPE_ETHERNET)
                 .setProtocolType(ARP.PROTO_TYPE_IP)
@@ -18,11 +18,11 @@ class ArpHandler {
                 .setTargetProtocolAddress(inArpPacket.getSenderProtocolAddress());
     }
 
-    static Ethernet getReplyPayload(Iface inIface, Ethernet etherPacket, ARP arpPacket) {
+    Ethernet getReplyPayload(Iface inIface, Ethernet etherPacket, ARP arpPacket) {
         return (Ethernet) new Ethernet()
                 .setEtherType(Ethernet.TYPE_ARP)
                 .setSourceMACAddress(inIface.getMacAddress().toBytes())
                 .setDestinationMACAddress(etherPacket.getSourceMACAddress())
-                .setPayload(ArpHandler.getReplyHeader(inIface, arpPacket));
+                .setPayload(getReplyHeader(inIface, arpPacket));
     }
 }
