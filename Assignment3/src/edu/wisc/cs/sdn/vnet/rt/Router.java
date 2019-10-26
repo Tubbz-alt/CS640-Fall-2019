@@ -147,48 +147,6 @@ public class Router extends Device
         this.forwardIpPacket(etherPacket, inIface);
 	}
 
-	private void sendIcmpMessage(Iface inIface, IPv4 ipPacket, int icmpType, int icmpCode) {
-		Ethernet ether = new Ethernet();
-		IPv4 ip = new IPv4();
-		ICMP icmp = new ICMP();
-		Data data = new Data();
-
-		// ether
-		ether.setEtherType(Ethernet.TYPE_IPv4);
-		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
-
-		// destinationMAC
-		MACAddress destinationMACAddress = getMacByIp(ipPacket.getSourceAddress());
-		if (destinationMACAddress == null) return;
-		ether.setDestinationMACAddress(destinationMACAddress.toBytes());
-
-		// ip
-		ip.setTtl((byte) 64);
-		ip.setProtocol(IPv4.PROTOCOL_ICMP);
-		ip.setSourceAddress(inIface.getIpAddress());
-		ip.setDestinationAddress(ipPacket.getSourceAddress());
-
-		// icmp
-		icmp.setIcmpType((byte) icmpType);
-		icmp.setIcmpCode((byte) icmpCode);
-
-		// data
-		int ipHeaderNumBytes = ipPacket.getHeaderLength() * 4;
-		int icmpDataNumBytes = 4 + ipHeaderNumBytes + 8;
-		byte[] icmpDataBytes = new byte[icmpDataNumBytes];
-		byte[] ipPacketBytes = ipPacket.serialize();
-
-		System.arraycopy(ipPacketBytes, 0, icmpDataBytes, 4, icmpDataNumBytes - 4);
-		data.setData(icmpDataBytes);
-
-		ether.setPayload(ip);
-		ip.setPayload(icmp);
-		icmp.setPayload(data);
-
-		sendPacket(ether, inIface);
-	}
-
-
 	private MACAddress getMacByIp(int ipAddr) {
 		// Find matching route table entry
 		RouteEntry bestMatch = this.routeTable.lookup(ipAddr);
@@ -250,4 +208,53 @@ public class Router extends Device
 
         this.sendPacket(etherPacket, outIface);
     }
+
+	private void sendIcmpMessage(Iface inIface, IPv4 ipPacket, int icmpType, int icmpCode) {
+		Ethernet ether = getEthernetPacket(inIface, ipPacket, icmpType, icmpCode);
+		if (ether != null) sendPacket(ether, inIface);
+	}
+
+	private Data getIcmpData(IPv4 ipPacket) {
+		Data data = new Data();
+		int ipHeaderNumBytes = ipPacket.getHeaderLength() * 4;
+		int icmpDataNumBytes = 4 + ipHeaderNumBytes + 8;
+		byte[] icmpDataBytes = new byte[icmpDataNumBytes];
+		byte[] ipPacketBytes = ipPacket.serialize();
+
+		System.arraycopy(ipPacketBytes, 0, icmpDataBytes, 4, icmpDataNumBytes - 4);
+		data.setData(icmpDataBytes);
+
+		return data;
+	}
+
+	private ICMP getIcmpPacket(IPv4 ipPacket, int icmpType, int icmpCode) {
+		ICMP icmp = new ICMP();
+		icmp.setIcmpType((byte) icmpType);
+		icmp.setIcmpCode((byte) icmpCode);
+		icmp.setPayload(getIcmpData(ipPacket));
+		return icmp;
+	}
+
+	private IPv4 getIpPacket(Iface inIface, IPv4 ipPacket, int icmpType, int icmpCode) {
+		IPv4 ip = new IPv4();
+		ip.setTtl((byte) 64);
+		ip.setProtocol(IPv4.PROTOCOL_ICMP);
+		ip.setSourceAddress(inIface.getIpAddress());
+		ip.setDestinationAddress(ipPacket.getSourceAddress());
+		ip.setPayload(getIcmpPacket(ipPacket, icmpType, icmpCode));
+		return ip;
+	}
+
+	private Ethernet getEthernetPacket(Iface inIface, IPv4 ipPacket, int icmpType, int icmpCode) {
+		Ethernet ether = new Ethernet();
+		ether.setEtherType(Ethernet.TYPE_IPv4);
+		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
+
+		MACAddress destinationMACAddress = getMacByIp(ipPacket.getSourceAddress());
+		if (destinationMACAddress == null) return null;
+		ether.setDestinationMACAddress(destinationMACAddress.toBytes());
+
+		ether.setPayload(getIpPacket(inIface, ipPacket, icmpType, icmpCode));
+		return ether;
+	}
 }
