@@ -119,13 +119,10 @@ public class Router extends Device
 				arpHandler.sendReply(inIface, etherPacket, arpPacket);
 				break;
 			case ARP.OP_REPLY:
-				int ip = IPv4.toIPv4Address(arpPacket.getSenderProtocolAddress());
+				int ipAddr = IPv4.toIPv4Address(arpPacket.getSenderProtocolAddress());
 				MACAddress macAddress = new MACAddress(arpPacket.getSenderHardwareAddress());
-				// TODO: find the queue, 
-				// stop sending ARP req, 
-				// send all pkt with correct MAC addr to dest, 
-				// remove the queue from the table
-				arpCache.insert(macAddress, ip);
+				arpHandler.handleResponse(ipAddr, macAddress);
+				arpCache.insert(macAddress, ipAddr);
 				break;
 		}
 	}
@@ -218,8 +215,7 @@ public class Router extends Device
         // Set destination MAC address in Ethernet header
         ArpEntry arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry) {
-			arpHandler.generateRequest(etherPacket, nextHop);
-//			icmpHandler.sendMessage(inIface, ipPacket, 3, 1);
+			arpHandler.generateRequest(etherPacket, nextHop, inIface, outIface);
 			return;
 		}
         etherPacket.setDestinationMACAddress(arpEntry.getMac().toBytes());

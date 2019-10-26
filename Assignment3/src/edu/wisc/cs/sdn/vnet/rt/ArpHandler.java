@@ -62,26 +62,28 @@ class ArpHandler {
     }
 
     void handleResponse(int ipAddr, MACAddress macAddress){
-        // TODO: find the queue in the table
-        // stop the thread
-        // set det macAddress for all pkt in the Q
-        // send orig pkt from Q
-        // remove the entry from the table
+        synchronized (requestMap) {
+            ArpRequestQueue arpRequestQueue = requestMap.get(ipAddr);
+            if (arpRequestQueue == null) return;
+            arpRequestQueue.handleResponse(macAddress);
+            requestMap.remove(ipAddr);
+        }
     }
 
-    void removeQueue(int ipAddr){
-        // TODO: find the queue in the table
+    void removeQueueFromTable(int ipAddr){
+        synchronized (requestMap) {
+            requestMap.remove(ipAddr);
+        }
     }
 
-    void generateRequest(Ethernet ethernetPacket, int ipAddr) {
+    void generateRequest(Ethernet ethernetPacket, int ipAddr, Iface inIface, Iface outIface) {
         synchronized (requestMap) {
             ArpRequestQueue arpRequestQueue = requestMap.get(ipAddr);
             if (arpRequestQueue == null) {
-                arpRequestQueue = new ArpRequestQueue(this, ipAddr);
-                arpRequestQueue.startSendingArpRequest();
+                arpRequestQueue = new ArpRequestQueue(this, ipAddr, outIface);
                 requestMap.put(ipAddr, arpRequestQueue);
             }
-            arpRequestQueue.add(ethernetPacket);
+            arpRequestQueue.add(ethernetPacket, inIface);
         }
     }
 }
