@@ -231,6 +231,19 @@ public class Router extends Device
 		if (ether != null) sendPacket(ether, inIface);
 	}
 
+	private ARP getArpHeader(Iface inIface, ARP inArpPacket) {
+		return new ARP()
+				.setHardwareType(ARP.HW_TYPE_ETHERNET)
+				.setProtocolType(ARP.PROTO_TYPE_IP)
+				.setHardwareAddressLength((byte) Ethernet.DATALAYER_ADDRESS_LENGTH)
+				.setProtocolAddressLength((byte) 4)
+				.setOpCode(ARP.OP_REPLY)
+				.setSenderHardwareAddress(inIface.getMacAddress().toBytes())
+				.setSenderProtocolAddress(inIface.getIpAddress())
+				.setTargetHardwareAddress(inArpPacket.getSenderHardwareAddress())
+				.setTargetProtocolAddress(inArpPacket.getSenderProtocolAddress());
+	}
+
 
 	private Data getIcmpData(IPv4 ipPacket) {
 		Data data = new Data();
