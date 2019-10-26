@@ -125,10 +125,22 @@ public class Router extends Device
         ipPacket.resetChecksum();
 
         // Check if packet is destined for one of router's interfaces
-        for (Iface iface : this.interfaces.values())
-        {
-        	if (ipPacket.getDestinationAddress() == iface.getIpAddress())
-        	{ return; }
+		for (Iface iface : this.interfaces.values()) {
+			if (ipPacket.getDestinationAddress() == iface.getIpAddress()) {
+				byte protocol = ipPacket.getProtocol();
+				switch (protocol) {
+					case IPv4.PROTOCOL_UDP:
+					case IPv4.PROTOCOL_TCP:
+						sendIcmpMessage(inIface, ipPacket, 3, 3);
+						break;
+					case IPv4.PROTOCOL_ICMP:
+						ICMP icmp = (ICMP) ipPacket.getPayload();
+						if (icmp.getIcmpType() == 8) {
+							// TODO: echo reply
+						}
+						break;
+				}
+			}
         }
 
         // Do route lookup and forward
