@@ -1,11 +1,15 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
+import java.nio.ByteBuffer;
+
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.*;
-
-import java.nio.ByteBuffer;
+import net.floodlightcontroller.packet.ARP;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.ICMP;
+import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.MACAddress;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -117,6 +121,10 @@ public class Router extends Device
 			case ARP.OP_REPLY:
 				int ip = IPv4.toIPv4Address(arpPacket.getSenderProtocolAddress());
 				MACAddress macAddress = new MACAddress(arpPacket.getSenderHardwareAddress());
+				// TODO: find the queue, 
+				// stop sending ARP req, 
+				// send all pkt with correct MAC addr to dest, 
+				// remove the queue from the table
 				arpCache.insert(macAddress, ip);
 				break;
 		}
@@ -210,7 +218,7 @@ public class Router extends Device
         // Set destination MAC address in Ethernet header
         ArpEntry arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry) {
-			arpHandler.generateRequest(inIface, etherPacket, nextHop);
+			arpHandler.generateRequest(etherPacket, nextHop);
 //			icmpHandler.sendMessage(inIface, ipPacket, 3, 1);
 			return;
 		}

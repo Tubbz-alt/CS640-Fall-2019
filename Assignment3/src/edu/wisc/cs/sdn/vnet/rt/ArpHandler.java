@@ -1,14 +1,15 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
-import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.ARP;
-import net.floodlightcontroller.packet.Ethernet;
-
 import java.util.Hashtable;
 import java.util.Map;
 
+import edu.wisc.cs.sdn.vnet.Iface;
+import net.floodlightcontroller.packet.ARP;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.MACAddress;
+
 class ArpHandler {
-    private Router router;
+    Router router;
     private final Map<Integer, ArpRequestQueue> requestMap;
 
     ArpHandler(Router router) {
@@ -60,12 +61,24 @@ class ArpHandler {
         router.sendPacket(ether, inIface);
     }
 
-    void generateRequest(Iface inIface, Ethernet ethernetPacket, int ipAddr) {
+    void handleResponse(int ipAddr, MACAddress macAddress){
+        // TODO: find the queue in the table
+        // stop the thread
+        // set det macAddress for all pkt in the Q
+        // send orig pkt from Q
+        // remove the entry from the table
+    }
+
+    void removeQueue(int ipAddr){
+        // TODO: find the queue in the table
+    }
+
+    void generateRequest(Ethernet ethernetPacket, int ipAddr) {
         synchronized (requestMap) {
             ArpRequestQueue arpRequestQueue = requestMap.get(ipAddr);
             if (arpRequestQueue == null) {
-                arpRequestQueue = new ArpRequestQueue(this, inIface, ipAddr);
-                arpRequestQueue.startSendingRequest();
+                arpRequestQueue = new ArpRequestQueue(this, ipAddr);
+                arpRequestQueue.startSendingArpRequest();
                 requestMap.put(ipAddr, arpRequestQueue);
             }
             arpRequestQueue.add(ethernetPacket);
