@@ -116,8 +116,10 @@ public class Router extends Device
 
         // Check TTL
         ipPacket.setTtl((byte)(ipPacket.getTtl()-1));
-        if (0 == ipPacket.getTtl())
-        { return; }
+		if (0 == ipPacket.getTtl()) {
+			sendIcmpMessage(inIface, ipPacket, 11, 0);
+			return;
+		}
 
         // Reset checksum now that TTL is decremented
         ipPacket.resetChecksum();
@@ -208,8 +210,10 @@ public class Router extends Device
         RouteEntry bestMatch = this.routeTable.lookup(dstAddr);
 
         // If no entry matched, do nothing
-        if (null == bestMatch)
-        { return; }
+		if (null == bestMatch) {
+			sendIcmpMessage(inIface, ipPacket, 3, 0);
+			return;
+		}
 
         // Make sure we don't sent a packet back out the interface it came in
         Iface outIface = bestMatch.getInterface();
@@ -226,8 +230,10 @@ public class Router extends Device
 
         // Set destination MAC address in Ethernet header
         ArpEntry arpEntry = this.arpCache.lookup(nextHop);
-        if (null == arpEntry)
-        { return; }
+		if (null == arpEntry) {
+			sendIcmpMessage(inIface, ipPacket, 3, 1);
+			return;
+		}
         etherPacket.setDestinationMACAddress(arpEntry.getMac().toBytes());
 
         this.sendPacket(etherPacket, outIface);
