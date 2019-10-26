@@ -114,9 +114,12 @@ public class Router extends Device
 				if (targetIp != inIface.getIpAddress()) return;
 				arpHandler.sendReply(inIface, etherPacket, arpPacket);
 				break;
+			case ARP.OP_REPLY:
+				int ip = IPv4.toIPv4Address(arpPacket.getSenderProtocolAddress());
+				MACAddress macAddress = new MACAddress(arpPacket.getSenderHardwareAddress());
+				arpCache.insert(macAddress, ip);
+				break;
 		}
-
-
 	}
 
 	private void handleIpPacket(Ethernet etherPacket, Iface inIface)
@@ -155,15 +158,15 @@ public class Router extends Device
 					case IPv4.PROTOCOL_UDP:
 					case IPv4.PROTOCOL_TCP:
 						icmpHandler.sendMessage(inIface, ipPacket, 3, 3);
-						return;
+						break;
 					case IPv4.PROTOCOL_ICMP:
 						ICMP icmp = (ICMP) ipPacket.getPayload();
 						if (icmp.getIcmpType() == 8) {
 							icmpHandler.sendEcho(inIface, ipPacket);
 						}
-					default:
-						return;
+						break;
 				}
+				return;
 			}
         }
 
@@ -207,7 +210,8 @@ public class Router extends Device
         // Set destination MAC address in Ethernet header
         ArpEntry arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry) {
-			icmpHandler.sendMessage(inIface, ipPacket, 3, 1);
+			arpHandler.generateRequest(inIface, nextHop);
+//			icmpHandler.sendMessage(inIface, ipPacket, 3, 1);
 			return;
 		}
         etherPacket.setDestinationMACAddress(arpEntry.getMac().toBytes());
