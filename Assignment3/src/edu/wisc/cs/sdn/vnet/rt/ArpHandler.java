@@ -4,11 +4,16 @@ import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 
+import java.util.Hashtable;
+import java.util.Map;
+
 class ArpHandler {
     private Router router;
+    private final Map<Integer, ArpRequestQueue> requestMap;
 
     ArpHandler(Router router) {
         this.router = router;
+        this.requestMap = new Hashtable<>();
     }
 
     private ARP getHeader(Iface inIface) {
@@ -53,5 +58,16 @@ class ArpHandler {
                 .setDestinationMACAddress("FF:FF:FF:FF:FF:FF")
                 .setPayload(getRequestHeader(inIface, ipAddr));
         router.sendPacket(ether, inIface);
+    }
+
+    void generateRequest(Iface inIface, int ipAddr) {
+        synchronized (requestMap) {
+            ArpRequestQueue arpRequestQueue = requestMap.get(ipAddr);
+            if (arpRequestQueue == null) {
+                arpRequestQueue = new ArpRequestQueue(this, inIface, ipAddr);
+                arpRequestQueue.startSendingRequest();
+                requestMap.put(ipAddr, arpRequestQueue);
+            }
+        }
     }
 }
