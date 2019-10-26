@@ -4,7 +4,7 @@ import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 
-class ARPHandler {
+class ArpHandler {
     private static ARP getReplyHeader(Iface inIface, ARP inArpPacket) {
         return new ARP()
                 .setHardwareType(ARP.HW_TYPE_ETHERNET)
@@ -23,6 +23,6 @@ class ARPHandler {
                 .setEtherType(Ethernet.TYPE_ARP)
                 .setSourceMACAddress(inIface.getMacAddress().toBytes())
                 .setDestinationMACAddress(etherPacket.getSourceMACAddress())
-                .setPayload(ARPHandler.getReplyHeader(inIface, arpPacket));
+                .setPayload(ArpHandler.getReplyHeader(inIface, arpPacket));
     }
 }

@@ -103,7 +103,7 @@ public class Router extends Device
 		switch (arpPacket.getOpCode()) {
 			case ARP.OP_REQUEST:
 				if (targetIp != inIface.getIpAddress()) return;
-				Ethernet ether = ARPHandler.getReplyPayload(inIface, etherPacket, arpPacket);
+				Ethernet ether = ArpHandler.getReplyPayload(inIface, etherPacket, arpPacket);
 				sendPacket(ether, inIface);
 		}
 
