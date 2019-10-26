@@ -5,6 +5,8 @@ import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.*;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
  */
@@ -81,18 +83,33 @@ public class Router extends Device
 		System.out.println("*** -> Received packet: " +
                 etherPacket.toString().replace("\n", "\n\t"));
 
-		/********************************************************************/
-		/* TODO: Handle packets                                             */
 
-		switch(etherPacket.getEtherType())
-		{
-		case Ethernet.TYPE_IPv4:
-			this.handleIpPacket(etherPacket, inIface);
-			break;
-		// Ignore all other packet types, for now
+		switch (etherPacket.getEtherType()) {
+			case Ethernet.TYPE_IPv4:
+				this.handleIpPacket(etherPacket, inIface);
+				break;
+			case Ethernet.TYPE_ARP:
+				this.handleArpPacket(etherPacket, inIface);
+				break;
+		}
+	}
+
+	private void handleArpPacket(Ethernet etherPacket, Iface inIface) {
+		ARP arpPacket = (ARP) etherPacket.getPayload();
+		int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
+		switch (arpPacket.getOpCode()) {
+			case ARP.OP_REQUEST:
+				if (targetIp != inIface.getIpAddress()) return;
+				Ethernet ether = (Ethernet) new Ethernet()
+						.setEtherType(Ethernet.TYPE_ARP)
+						.setSourceMACAddress(inIface.getMacAddress().toBytes())
+						.setDestinationMACAddress(etherPacket.getSourceMACAddress())
+						.setPayload(getArpHeader(inIface, arpPacket));
+
+				sendPacket(ether, inIface);
 		}
 
-		/********************************************************************/
+
 	}
 
 	private void handleIpPacket(Ethernet etherPacket, Iface inIface)
@@ -276,16 +293,16 @@ public class Router extends Device
 		return ip;
 	}
 
-	private Ethernet getEthernetPacket(Iface inIface, IPv4 origIpPacket, IPv4 ipPacket) {
+	private Ethernet getEthernetPacket(Iface inIface, IPv4 ipPacket, IPv4 payload) {
 		Ethernet ether = new Ethernet();
 		ether.setEtherType(Ethernet.TYPE_IPv4);
 		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
 
-		MACAddress destinationMACAddress = getMacByIp(origIpPacket.getSourceAddress());
+		MACAddress destinationMACAddress = getMacByIp(ipPacket.getSourceAddress());
 		if (destinationMACAddress == null) return null;
 		ether.setDestinationMACAddress(destinationMACAddress.toBytes());
 
-		ether.setPayload(ipPacket);
+		ether.setPayload(payload);
 		return ether;
 	}
 }
