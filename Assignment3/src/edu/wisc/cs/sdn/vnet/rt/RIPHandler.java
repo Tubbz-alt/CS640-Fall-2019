@@ -8,11 +8,11 @@ import net.floodlightcontroller.packet.UDP;
 
 class RIPHandler {
     private Router router;
-    private RouteTable routeTable; 
+    private RouteTable routeTable;
 
     private final static int RIP_IP_ADDRESS = IPv4.toIPv4Address("224.0.0.9");
 
-    RIPHandler(Router router) {
+    RIPHandler(final Router router) {
         this.router = router;
         this.routeTable = router.getRouteTable();
 
@@ -25,31 +25,31 @@ class RIPHandler {
 
         sendRequest();
 
-        new Thread(new Runnable(){
+        new Thread(new Runnable() {
             @Override
             public void run() {
-                while(true){
+                while (true) {
                     try {
                         for (Iface iface : router.getInterfaces().values()) {
                             sendResponse(iface);
                         }
-						Thread.sleep(10000);
-					} catch (InterruptedException e) {}
+                        Thread.sleep(10000);
+                    } catch (InterruptedException ignored) {}
                 }
             }
-        }).run();
+        }).start();
 
-        new Thread(new Runnable(){
+        new Thread(new Runnable() {
             @Override
             public void run() {
-                while(true){
+                while (true) {
                     try {
                         // TODO: remove expired entry from this.router.getRouteTable().entries
-						Thread.sleep(30000);
-					} catch (InterruptedException e) {}
+                        Thread.sleep(30000);
+                    } catch (InterruptedException ignored) {}
                 }
             }
-        }).run();
+        }).start();
     }
 
     private RIPv2 createRipResponsePacket() {
@@ -92,7 +92,7 @@ class RIPHandler {
                 .setPayload(payload);
     }
 
-    void sendRequest() {
+    private void sendRequest() {
         RIPv2 ripPacket = createRipReqestPacket();
         UDP udpPacket = createUdpPacket(ripPacket);
         for (Iface iface : router.getInterfaces().values()) {
@@ -102,12 +102,22 @@ class RIPHandler {
         }
     }
 
-    void sendResponse(Iface iface){
+    private void sendResponse(Iface iface) {
         RIPv2 ripPacket = createRipResponsePacket();
         UDP udpPacket = createUdpPacket(ripPacket);
         IPv4 ipPacket = createIpPacket(iface, udpPacket);
         Ethernet ethernetPacket = createEthernetPacket(iface, ipPacket);
         router.sendPacket(ethernetPacket, iface);
+    }
+
+    private void handleRequset(Iface iface) {
+        sendResponse(iface);
+    }
+
+    private void handleResponse(Iface iface) {
+        for (RouteEntry routeEntry : routeTable.entries) {
+            // TODO: Update Route table
+        }
     }
 
     boolean isRipPacket(IPv4 ipPacket) {
@@ -125,16 +135,6 @@ class RIPHandler {
             case RIPv2.COMMAND_RESPONSE:
                 handleResponse(iface);
                 break;
-        } 
-    }
-
-    void handleRequset(Iface iface){
-        sendResponse(iface);
-    }
-
-    void handleResponse(Iface iface){
-        for (RouteEntry routeEntry : routeTable.entries) {
-            // TODO: Update Route table
         }
     }
 }
