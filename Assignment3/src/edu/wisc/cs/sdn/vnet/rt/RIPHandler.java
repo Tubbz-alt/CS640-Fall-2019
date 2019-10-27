@@ -1,16 +1,13 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.packet.RIPv2;
-import net.floodlightcontroller.packet.UDP;
+import net.floodlightcontroller.packet.*;
 
 class RIPHandler {
     private Router router;
 
     private final static int RIP_IP_ADDRESS = IPv4.toIPv4Address("224.0.0.9");
-    
+
     RIPHandler(Router router) {
         this.router = router;
 
@@ -50,7 +47,7 @@ class RIPHandler {
                 .setPayload(payload);
     }
 
-    void sendRequest(Iface inIface, int ipAddr) {
+    void sendRequest(Iface inIface) {
         RIPv2 ripPacket = getRipPacket();
         UDP udpPacket = getUdpPacket(ripPacket);
         for (Iface iface : router.getInterfaces().values()) {
@@ -61,6 +58,10 @@ class RIPHandler {
     }
 
     void handleResponse(IPv4 ipPacket) {
+        RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
+        for (RIPv2Entry entry : ripPacket.getEntries()) {
+
+        }
 
     }
 
