@@ -8,17 +8,19 @@ import net.floodlightcontroller.packet.UDP;
 
 class RIPHandler {
     private Router router;
+    private RouteTable routeTable; 
 
     private final static int RIP_IP_ADDRESS = IPv4.toIPv4Address("224.0.0.9");
 
     RIPHandler(Router router) {
         this.router = router;
+        this.routeTable = router.getRouteTable();
 
         for (Iface iface : router.getInterfaces().values()) {
             int mask = iface.getSubnetMask();
             int ip = iface.getIpAddress();
             int subnet = mask & ip;
-            router.getRouteTable().insert(subnet, 0, mask, iface);
+            routeTable.insert(subnet, 0, mask, iface);
         }
 
         sendRequest();
@@ -52,7 +54,7 @@ class RIPHandler {
 
     private RIPv2 createRipResponsePacket() {
         RIPv2 requestPacket = new RIPv2();
-        for (RouteEntry routeEntry : this.router.getRouteTable().entries) {
+        for (RouteEntry routeEntry : routeTable.entries) {
             // TODO: requestPacket.addEntry(entry);
         }
 
@@ -123,8 +125,7 @@ class RIPHandler {
             case RIPv2.COMMAND_RESPONSE:
                 handleResponse(iface);
                 break;
-        }
-        
+        } 
     }
 
     void handleRequset(Iface iface){
@@ -132,7 +133,7 @@ class RIPHandler {
     }
 
     void handleResponse(Iface iface){
-        for (RouteEntry routeEntry : this.router.getRouteTable().entries) {
+        for (RouteEntry routeEntry : routeTable.entries) {
             // TODO: Update Route table
         }
     }
