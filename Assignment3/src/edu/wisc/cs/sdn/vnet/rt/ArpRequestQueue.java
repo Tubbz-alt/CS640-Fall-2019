@@ -28,7 +28,6 @@ class ArpRequestQueue {
         this.arpHandler = arpHandler;
         this.outIface = outIface;
         this.queue = new LinkedList<>();
-
         this.thread = new Thread(new Runnable() {
             @Override
             public void run() {

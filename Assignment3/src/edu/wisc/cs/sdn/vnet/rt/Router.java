@@ -60,14 +60,13 @@ public class Router extends Device
 	 */
 	public void loadRouteTable(String routeTableFile)
 	{
-		if (!routeTable.load(routeTableFile, this))
-		{
-			System.err.println("Error setting up routing table from file "
-					+ routeTableFile);
-			System.exit(1);
+		if (!routeTable.load(routeTableFile, this)) {
+			this.ripHandler = new RIPHandler(this);
+			System.out.println("Loaded route table for interfaces");
+		} else {
+			System.out.println("Loaded static route table");
 		}
 
-		System.out.println("Loaded static route table");
 		System.out.println("-------------------------------------------------");
 		System.out.print(this.routeTable.toString());
 		System.out.println("-------------------------------------------------");
