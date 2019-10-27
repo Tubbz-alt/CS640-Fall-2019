@@ -77,7 +77,7 @@ class RIPHandler {
 
     private IPv4 createIpPacket(Iface iface, UDP payload) {
         return (IPv4) new IPv4()
-                .setTtl((byte) 64)
+                .setTtl((byte) 15)
                 .setProtocol(IPv4.PROTOCOL_UDP)
                 .setDestinationAddress(RIP_IP_ADDRESS)
                 .setSourceAddress(iface.getIpAddress())
@@ -102,19 +102,19 @@ class RIPHandler {
         }
     }
 
-    private void sendResponse(Iface iface) {
+    private void sendResponse(Iface inIface) {
         RIPv2 ripPacket = createRipResponsePacket();
         UDP udpPacket = createUdpPacket(ripPacket);
-        IPv4 ipPacket = createIpPacket(iface, udpPacket);
-        Ethernet ethernetPacket = createEthernetPacket(iface, ipPacket);
-        router.sendPacket(ethernetPacket, iface);
+        IPv4 ipPacket = createIpPacket(inIface, udpPacket);
+        Ethernet ethernetPacket = createEthernetPacket(inIface, ipPacket);
+        router.sendPacket(ethernetPacket, inIface);
     }
 
-    private void handleRequset(Iface iface) {
-        sendResponse(iface);
+    private void handleRequset(Iface inIface) {
+        sendResponse(inIface);
     }
 
-    private void handleResponse(Iface iface) {
+    private void handleResponse(Iface inIface) {
         for (RouteEntry routeEntry : routeTable.entries) {
             // TODO: Update Route table
         }
@@ -126,14 +126,14 @@ class RIPHandler {
                 ((UDP) ipPacket.getPayload()).getDestinationPort() == UDP.RIP_PORT;
     }
 
-    void handlePacket(IPv4 ipPacket, Iface iface) {
+    void handlePacket(IPv4 ipPacket, Iface inIface) {
         RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
         switch (ripPacket.getCommand()) {
             case RIPv2.COMMAND_REQUEST:
-                handleRequset(iface);
+                handleRequset(inIface);
                 break;
             case RIPv2.COMMAND_RESPONSE:
-                handleResponse(iface);
+                handleResponse(inIface);
                 break;
         }
     }

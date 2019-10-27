@@ -163,7 +163,7 @@ public class Router extends Device
         ipPacket.resetChecksum();
 
 		if (ripHandler.isRipPacket(ipPacket)) {
-			ripHandler.handlePacket(ipPacket);
+			ripHandler.handlePacket(ipPacket, inIface);
 		}
 
 		// Check if packet is destined for one of router's interfaces
