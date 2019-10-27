@@ -128,7 +128,7 @@ class RIPHandler {
                     routeEntry.setInterface(inIface);
                     routeEntry.distance = distance;
                 }
-                routeEntry.lastValidTime = System.currentTimeMillis() + TIMEOUT;
+                routeEntry.lastValidTime = Math.max(System.currentTimeMillis() + TIMEOUT, routeEntry.lastValidTime);
             }
         }
     }
