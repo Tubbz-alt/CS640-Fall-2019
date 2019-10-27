@@ -19,7 +19,7 @@ class ArpHandler {
         this.map = new Hashtable<>();
     }
 
-    private ARP getHeader(Iface inIface) {
+    private ARP createArpPacket(Iface inIface) {
         return new ARP()
                 .setHardwareType(ARP.HW_TYPE_ETHERNET)
                 .setProtocolType(ARP.PROTO_TYPE_IP)
@@ -29,37 +29,37 @@ class ArpHandler {
                 .setSenderProtocolAddress(inIface.getIpAddress());
     }
 
-    private ARP getReplyHeader(Iface inIface, ARP inArpPacket) {
-        return getHeader(inIface)
+    private ARP createArpReplyPacket(Iface inIface, ARP inArpPacket) {
+        return createArpPacket(inIface)
                 .setOpCode(ARP.OP_REPLY)
                 .setTargetHardwareAddress(inArpPacket.getSenderHardwareAddress())
                 .setTargetProtocolAddress(inArpPacket.getSenderProtocolAddress());
     }
 
-    private ARP getRequestHeader(Iface inIface, int ipAddr) {
-        return getHeader(inIface)
+    private ARP createArpRequestPacket(Iface inIface, int ipAddr) {
+        return createArpPacket(inIface)
                 .setOpCode(ARP.OP_REQUEST)
                 .setTargetHardwareAddress(new byte[Ethernet.DATALAYER_ADDRESS_LENGTH])
                 .setTargetProtocolAddress(ipAddr);
     }
 
-    private Ethernet getReplyPayload(Iface inIface) {
+    private Ethernet createEthernetPacket(Iface inIface) {
         return new Ethernet()
                 .setEtherType(Ethernet.TYPE_ARP)
                 .setSourceMACAddress(inIface.getMacAddress().toBytes());
     }
 
     void sendReply(Iface inIface, Ethernet etherPacket, ARP arpPacket) {
-        Ethernet ether = (Ethernet) getReplyPayload(inIface)
+        Ethernet ether = (Ethernet) createEthernetPacket(inIface)
                 .setDestinationMACAddress(etherPacket.getSourceMACAddress())
-                .setPayload(getReplyHeader(inIface, arpPacket));
+                .setPayload(createArpReplyPacket(inIface, arpPacket));
         router.sendPacket(ether, inIface);
     }
 
     void sendRequest(Iface inIface, int ipAddr) {
-        Ethernet ether = (Ethernet) getReplyPayload(inIface)
+        Ethernet ether = (Ethernet) createEthernetPacket(inIface)
                 .setDestinationMACAddress("FF:FF:FF:FF:FF:FF")
-                .setPayload(getRequestHeader(inIface, ipAddr));
+                .setPayload(createArpRequestPacket(inIface, ipAddr));
         router.sendPacket(ether, inIface);
     }
 

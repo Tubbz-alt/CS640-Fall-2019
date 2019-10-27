@@ -19,18 +19,22 @@ class RIPHandler {
         }
     }
 
-    private RIPv2 getRipPacket() {
+    private RIPv2 createRipResponsePacket() {
         return null;
     }
 
-    private UDP getUdpPacket(RIPv2 payload) {
+    private RIPv2 createRipReqestPacket() {
+        return null;
+    }
+
+    private UDP createUdpPacket(RIPv2 payload) {
         return (UDP) new UDP()
                 .setSourcePort(UDP.RIP_PORT)
                 .setDestinationPort(UDP.RIP_PORT)
                 .setPayload(payload);
     }
 
-    private IPv4 getIpPacket(Iface iface, UDP payload) {
+    private IPv4 createIpPacket(Iface iface, UDP payload) {
         return (IPv4) new IPv4()
                 .setTtl((byte) 64)
                 .setProtocol(IPv4.PROTOCOL_UDP)
@@ -39,7 +43,7 @@ class RIPHandler {
                 .setPayload(payload);
     }
 
-    private Ethernet getEthernetPacket(Iface inIface, IPv4 payload) {
+    private Ethernet createEthernetPacket(Iface inIface, IPv4 payload) {
         return (Ethernet) new Ethernet()
                 .setEtherType(Ethernet.TYPE_IPv4)
                 .setSourceMACAddress(inIface.getMacAddress().toBytes())
@@ -48,21 +52,20 @@ class RIPHandler {
     }
 
     void sendRequest(Iface inIface) {
-        RIPv2 ripPacket = getRipPacket();
-        UDP udpPacket = getUdpPacket(ripPacket);
+        RIPv2 ripPacket = createRipReqestPacket();
+        UDP udpPacket = createUdpPacket(ripPacket);
         for (Iface iface : router.getInterfaces().values()) {
-            IPv4 ipPacket = getIpPacket(iface, udpPacket);
-            Ethernet ethernetPacket = getEthernetPacket(inIface, ipPacket);
+            IPv4 ipPacket = createIpPacket(iface, udpPacket);
+            Ethernet ethernetPacket = createEthernetPacket(inIface, ipPacket);
             router.sendPacket(ethernetPacket, inIface);
         }
     }
 
-    void handleResponse(IPv4 ipPacket) {
+    void handlePacket(IPv4 ipPacket) {
         RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
         for (RIPv2Entry entry : ripPacket.getEntries()) {
 
         }
-
     }
 
     boolean isRipPacket(IPv4 ipPacket) {

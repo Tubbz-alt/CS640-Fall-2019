@@ -1,11 +1,15 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
+import java.nio.ByteBuffer;
+
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.*;
-
-import java.nio.ByteBuffer;
+import net.floodlightcontroller.packet.ARP;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.ICMP;
+import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.MACAddress;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -159,7 +163,7 @@ public class Router extends Device
         ipPacket.resetChecksum();
 
 		if (ripHandler.isRipPacket(ipPacket)) {
-			ripHandler.handleResponse(ipPacket);
+			ripHandler.handlePacket(ipPacket);
 		}
 
 		// Check if packet is destined for one of router's interfaces
