@@ -9,9 +9,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.floodlightcontroller.packet.IPv4;
-
 import edu.wisc.cs.sdn.vnet.Iface;
+import net.floodlightcontroller.packet.IPv4;
 
 /**
  * Route table for a router.
@@ -20,7 +19,7 @@ import edu.wisc.cs.sdn.vnet.Iface;
 public class RouteTable 
 {
 	/** Entries in the route table */
-	private List<RouteEntry> entries; 
+	List<RouteEntry> entries; 
 	
 	/**
 	 * Initialize an empty route table.

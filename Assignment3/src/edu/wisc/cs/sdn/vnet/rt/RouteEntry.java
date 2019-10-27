@@ -1,7 +1,7 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
-import net.floodlightcontroller.packet.IPv4;
 import edu.wisc.cs.sdn.vnet.Iface;
+import net.floodlightcontroller.packet.IPv4;
 
 /**
  * An entry in a route table.
@@ -17,6 +17,12 @@ public class RouteEntry
 	
 	/** Subnet mask */
 	private int maskAddress;
+
+	/** Distance to the router */
+	private int distance = 0;
+
+	/** The entry is invalid if current time > lastValidTime */
+	private long lastValidTime = Long.MAX_VALUE;
 	
 	/** Router interface out which packets should be sent to reach
 	 * the destination or gateway */

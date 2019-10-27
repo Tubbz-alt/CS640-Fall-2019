@@ -1,7 +1,10 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.*;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.RIPv2;
+import net.floodlightcontroller.packet.UDP;
 
 class RIPHandler {
     private Router router;
@@ -17,14 +20,50 @@ class RIPHandler {
             int subnet = mask & ip;
             router.getRouteTable().insert(subnet, 0, mask, iface);
         }
+
+        sendRequest();
+
+        new Thread(new Runnable(){
+            @Override
+            public void run() {
+                while(true){
+                    try {
+                        for (Iface iface : router.getInterfaces().values()) {
+                            sendResponse(iface);
+                        }
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {}
+                }
+            }
+        }).run();
+
+        new Thread(new Runnable(){
+            @Override
+            public void run() {
+                while(true){
+                    try {
+                        // TODO: remove expired entry from this.router.getRouteTable().entries
+						Thread.sleep(30000);
+					} catch (InterruptedException e) {}
+                }
+            }
+        }).run();
     }
 
     private RIPv2 createRipResponsePacket() {
-        return null;
+        RIPv2 requestPacket = new RIPv2();
+        for (RouteEntry routeEntry : this.router.getRouteTable().entries) {
+            // TODO: requestPacket.addEntry(entry);
+        }
+
+        requestPacket.setCommand(RIPv2.COMMAND_RESPONSE);
+        return requestPacket;
     }
 
     private RIPv2 createRipReqestPacket() {
-        return null;
+        RIPv2 requestPacket = new RIPv2();
+        requestPacket.setCommand(RIPv2.COMMAND_REQUEST);
+        return requestPacket;
     }
 
     private UDP createUdpPacket(RIPv2 payload) {
@@ -51,26 +90,50 @@ class RIPHandler {
                 .setPayload(payload);
     }
 
-    void sendRequest(Iface inIface) {
+    void sendRequest() {
         RIPv2 ripPacket = createRipReqestPacket();
         UDP udpPacket = createUdpPacket(ripPacket);
         for (Iface iface : router.getInterfaces().values()) {
             IPv4 ipPacket = createIpPacket(iface, udpPacket);
-            Ethernet ethernetPacket = createEthernetPacket(inIface, ipPacket);
-            router.sendPacket(ethernetPacket, inIface);
+            Ethernet ethernetPacket = createEthernetPacket(iface, ipPacket);
+            router.sendPacket(ethernetPacket, iface);
         }
     }
 
-    void handlePacket(IPv4 ipPacket) {
-        RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
-        for (RIPv2Entry entry : ripPacket.getEntries()) {
-
-        }
+    void sendResponse(Iface iface){
+        RIPv2 ripPacket = createRipResponsePacket();
+        UDP udpPacket = createUdpPacket(ripPacket);
+        IPv4 ipPacket = createIpPacket(iface, udpPacket);
+        Ethernet ethernetPacket = createEthernetPacket(iface, ipPacket);
+        router.sendPacket(ethernetPacket, iface);
     }
 
     boolean isRipPacket(IPv4 ipPacket) {
         return ipPacket.getDestinationAddress() == RIPHandler.RIP_IP_ADDRESS &&
                 ipPacket.getProtocol() == IPv4.PROTOCOL_UDP &&
                 ((UDP) ipPacket.getPayload()).getDestinationPort() == UDP.RIP_PORT;
+    }
+
+    void handlePacket(IPv4 ipPacket, Iface iface) {
+        RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
+        switch (ripPacket.getCommand()) {
+            case RIPv2.COMMAND_REQUEST:
+                handleRequset(iface);
+                break;
+            case RIPv2.COMMAND_RESPONSE:
+                handleResponse(iface);
+                break;
+        }
+        
+    }
+
+    void handleRequset(Iface iface){
+        sendResponse(iface);
+    }
+
+    void handleResponse(Iface iface){
+        for (RouteEntry routeEntry : this.router.getRouteTable().entries) {
+            // TODO: Update Route table
+        }
     }
 }
