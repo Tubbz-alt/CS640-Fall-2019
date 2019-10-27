@@ -17,7 +17,6 @@ class RIPHandler {
     RIPHandler(final Router router) {
         this.router = router;
         this.routeTable = router.getRouteTable();
-        this.routeTable.isRipEnabled = true;
 
         for (Iface iface : router.getInterfaces().values()) {
             int mask = iface.getSubnetMask();

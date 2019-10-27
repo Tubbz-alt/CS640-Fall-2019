@@ -58,6 +58,11 @@ public class Router extends Device
 	public RouteTable getRouteTable()
 	{ return this.routeTable; }
 
+	public void enableRIP(){
+		this.routeTable.isRipEnabled = true;
+		this.ripHandler = new RIPHandler(this);
+	}
+
 	/**
 	 * Load a new routing table from a file.
 	 * @param routeTableFile the name of the file containing the routing table
@@ -65,10 +70,8 @@ public class Router extends Device
 	public void loadRouteTable(String routeTableFile)
 	{
 		if (!routeTable.load(routeTableFile, this)) {
-			this.ripHandler = new RIPHandler(this);
-			System.out.println("Loaded route table for interfaces");
-		} else {
-			System.out.println("Loaded static route table");
+			System.err.println("Error setting up routing table from file " + routeTableFile);
+			System.exit(1);
 		}
 
 		System.out.println("-------------------------------------------------");
