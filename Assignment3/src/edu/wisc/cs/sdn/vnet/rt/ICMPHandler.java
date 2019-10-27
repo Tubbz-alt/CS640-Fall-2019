@@ -52,7 +52,7 @@ class ICMPHandler {
     }
 
     void sendEcho(Iface inIface, IPv4 ipPacket) {
-        Data data = new Data(((ICMP) ipPacket.getPayload()).getPayload().serialize());
+        Data data = new Data(ipPacket.getPayload().getPayload().serialize());
         ICMP icmp = getIcmpPacket(0, 0, data);
         IPv4 payload = getIpPacket(ipPacket, icmp)
                 .setSourceAddress(ipPacket.getDestinationAddress());

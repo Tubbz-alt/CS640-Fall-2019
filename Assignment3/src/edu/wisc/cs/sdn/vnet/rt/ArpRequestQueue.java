@@ -9,7 +9,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 class ArpRequestQueue {
-    static class QueueElement {
+    static private class QueueElement {
         Ethernet ethernetPacket;
         Iface inIface;
 
@@ -28,7 +28,8 @@ class ArpRequestQueue {
         this.arpHandler = arpHandler;
         this.outIface = outIface;
         this.queue = new LinkedList<>();
-        Runnable runnable = new Runnable() {
+
+        this.thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 for (int i = 0; i < 3; i++) {
@@ -42,14 +43,13 @@ class ArpRequestQueue {
 
                 for (QueueElement e : queue) {
                     IPv4 ipPacket = (IPv4) e.ethernetPacket.getPayload();
-                    arpHandler.router.icmpHandler.sendMessage(e.inIface, ipPacket, 3, 1);
+                    arpHandler.icmpHandler.sendMessage(e.inIface, ipPacket, 3, 1);
                 }
 
                 arpHandler.removeQueueFromTable(ipAddress);
             }
-        };
+        });
 
-        this.thread = new Thread(runnable);
         this.thread.start();
     }
 
@@ -59,11 +59,10 @@ class ArpRequestQueue {
             e.ethernetPacket.setDestinationMACAddress(macAddress.toBytes());
             arpHandler.router.sendPacket(e.ethernetPacket, outIface);
         }
+        queue.clear();
     }
 
     void add(Ethernet ethernetPacket, Iface inIface) {
-        synchronized (queue) {
-            queue.add(new QueueElement(ethernetPacket, inIface));
-        }
+        queue.add(new QueueElement(ethernetPacket, inIface));
     }
 }

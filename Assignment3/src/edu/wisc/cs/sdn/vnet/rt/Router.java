@@ -21,18 +21,18 @@ public class Router extends Device
 	/**
 	 * ICMP handler for the router
 	 */
-	ICMPHandler icmpHandler;
+	private ICMPHandler icmpHandler;
 
 	/**
 	 * ARP handler for the router
 	 */
-	ArpHandler arpHandler;
+	private ArpHandler arpHandler;
 
 	/**
 	 * RIP handler for the router
 	 */
 
-	RIPHandler ripHandler;
+	private RIPHandler ripHandler;
 
 	/**
 	 * Creates a router for a specific host.
@@ -44,7 +44,7 @@ public class Router extends Device
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
 		this.icmpHandler = new ICMPHandler(this);
-		this.arpHandler = new ArpHandler(this);
+		this.arpHandler = new ArpHandler(this, icmpHandler);
 		this.ripHandler = new RIPHandler(this);
 	}
 

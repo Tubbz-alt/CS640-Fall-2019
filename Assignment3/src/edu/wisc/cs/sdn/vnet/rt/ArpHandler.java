@@ -1,20 +1,22 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
-import java.util.Hashtable;
-import java.util.Map;
-
 import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.MACAddress;
 
-class ArpHandler {
-    Router router;
-    private final Map<Integer, ArpRequestQueue> requestMap;
+import java.util.Hashtable;
+import java.util.Map;
 
-    ArpHandler(Router router) {
+class ArpHandler {
+    ICMPHandler icmpHandler;
+    Router router;
+    private final Map<Integer, ArpRequestQueue> map;
+
+    ArpHandler(Router router, ICMPHandler icmpHandler) {
         this.router = router;
-        this.requestMap = new Hashtable<>();
+        this.icmpHandler = icmpHandler;
+        this.map = new Hashtable<>();
     }
 
     private ARP getHeader(Iface inIface) {
@@ -61,29 +63,29 @@ class ArpHandler {
         router.sendPacket(ether, inIface);
     }
 
-    void handleResponse(int ipAddr, MACAddress macAddress){
-        synchronized (requestMap) {
-            ArpRequestQueue arpRequestQueue = requestMap.get(ipAddr);
+    void handleResponse(int ipAddr, MACAddress macAddress) {
+        synchronized (map) {
+            ArpRequestQueue arpRequestQueue = map.get(ipAddr);
             if (arpRequestQueue == null) return;
             arpRequestQueue.handleResponse(macAddress);
-            requestMap.remove(ipAddr);
+            map.remove(ipAddr);
         }
     }
 
-    void removeQueueFromTable(int ipAddr){
-        synchronized (requestMap) {
-            requestMap.remove(ipAddr);
+    void removeQueueFromTable(int ipAddr) {
+        synchronized (map) {
+            map.remove(ipAddr);
         }
     }
 
     void generateRequest(Ethernet ethernetPacket, int ipAddr, Iface inIface, Iface outIface) {
-        synchronized (requestMap) {
-            ArpRequestQueue arpRequestQueue = requestMap.get(ipAddr);
-            if (arpRequestQueue == null) {
-                arpRequestQueue = new ArpRequestQueue(this, ipAddr, outIface);
-                requestMap.put(ipAddr, arpRequestQueue);
+        synchronized (map) {
+            ArpRequestQueue queue = map.get(ipAddr);
+            if (queue == null) {
+                queue = new ArpRequestQueue(this, ipAddr, outIface);
+                map.put(ipAddr, queue);
             }
-            arpRequestQueue.add(ethernetPacket, inIface);
+            queue.add(ethernetPacket, inIface);
         }
     }
 }
