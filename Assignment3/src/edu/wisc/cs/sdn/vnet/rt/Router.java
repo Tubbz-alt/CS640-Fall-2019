@@ -158,7 +158,11 @@ public class Router extends Device
         // Reset checksum now that TTL is decremented
         ipPacket.resetChecksum();
 
-        // Check if packet is destined for one of router's interfaces
+		if (ripHandler.isRipPacket(ipPacket)) {
+			ripHandler.handleResponse(ipPacket);
+		}
+
+		// Check if packet is destined for one of router's interfaces
 		for (Iface iface : this.interfaces.values()) {
 			if (ipPacket.getDestinationAddress() == iface.getIpAddress()) {
 				switch (ipPacket.getProtocol()) {
@@ -175,7 +179,7 @@ public class Router extends Device
 				}
 				return;
 			}
-        }
+		}
 
         // Do route lookup and forward
         this.forwardIpPacket(etherPacket, inIface);
