@@ -19,10 +19,10 @@ public class RouteEntry
 	private int maskAddress;
 
 	/** Distance to the router */
-	private int distance = 0;
+	int distance = 0;
 
 	/** The entry is invalid if current time > lastValidTime */
-	private long lastValidTime = Long.MAX_VALUE;
+	long lastValidTime = Long.MAX_VALUE;
 	
 	/** Router interface out which packets should be sent to reach
 	 * the destination or gateway */

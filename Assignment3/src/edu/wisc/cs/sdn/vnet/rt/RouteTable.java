@@ -19,13 +19,29 @@ import net.floodlightcontroller.packet.IPv4;
 public class RouteTable 
 {
 	/** Entries in the route table */
-	List<RouteEntry> entries; 
+	private List<RouteEntry> entries; 
+
+	boolean isRipEnabled = false;
 	
 	/**
 	 * Initialize an empty route table.
 	 */
 	public RouteTable()
 	{ this.entries = new LinkedList<RouteEntry>(); }
+
+	public List<RouteEntry> getEntries(){
+		removeInvalidEntry();
+		return this.entries;
+	}
+
+	public void removeInvalidEntry() {
+		if (!isRipEnabled) return;
+		for (RouteEntry entry : new LinkedList<RouteEntry>(entries)) {
+			if (System.currentTimeMillis() > entry.lastValidTime) {
+				entries.remove(entry);
+			}
+		}
+	}
 	
 	/**
 	 * Lookup the route entry that matches a given IP address.
@@ -36,6 +52,7 @@ public class RouteTable
 	{
 		synchronized(this.entries)
         {
+			removeInvalidEntry();
 			/*****************************************************************/
 			/* TODO: Find the route entry with the longest prefix match      */
 			
@@ -161,6 +178,14 @@ public class RouteTable
 	public void insert(int dstIp, int gwIp, int maskIp, Iface iface)
 	{
 		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
+        synchronized(this.entries)
+        { 
+            this.entries.add(entry);
+        }
+	}
+
+	public void insert(RouteEntry entry)
+	{
         synchronized(this.entries)
         { 
             this.entries.add(entry);

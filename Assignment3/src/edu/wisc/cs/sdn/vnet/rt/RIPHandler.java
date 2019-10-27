@@ -4,6 +4,7 @@ import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.RIPv2;
+import net.floodlightcontroller.packet.RIPv2Entry;
 import net.floodlightcontroller.packet.UDP;
 
 class RIPHandler {
@@ -11,10 +12,12 @@ class RIPHandler {
     private RouteTable routeTable;
 
     private final static int RIP_IP_ADDRESS = IPv4.toIPv4Address("224.0.0.9");
+    private final static long TIMEOUT = 30000;
 
     RIPHandler(final Router router) {
         this.router = router;
         this.routeTable = router.getRouteTable();
+        this.routeTable.isRipEnabled = true;
 
         for (Iface iface : router.getInterfaces().values()) {
             int mask = iface.getSubnetMask();
@@ -38,24 +41,15 @@ class RIPHandler {
                 }
             }
         }).start();
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        // TODO: remove expired entry from this.router.getRouteTable().entries
-                        Thread.sleep(30000);
-                    } catch (InterruptedException ignored) {}
-                }
-            }
-        }).start();
     }
 
     private RIPv2 createRipResponsePacket() {
         RIPv2 requestPacket = new RIPv2();
-        for (RouteEntry routeEntry : routeTable.entries) {
-            // TODO: requestPacket.addEntry(entry);
+        for (RouteEntry routeEntry : routeTable.getEntries()) {
+            int address = routeEntry.getDestinationAddress();
+            int subnetMask = routeEntry.getMaskAddress();
+            int metric = routeEntry.distance;
+            requestPacket.addEntry(new RIPv2Entry(address, subnetMask, metric));
         }
 
         requestPacket.setCommand(RIPv2.COMMAND_RESPONSE);
@@ -114,9 +108,29 @@ class RIPHandler {
         sendResponse(inIface);
     }
 
-    private void handleResponse(Iface inIface) {
-        for (RouteEntry routeEntry : routeTable.entries) {
-            // TODO: Update Route table
+    private void handleResponse(IPv4 ipPacket, Iface inIface) {
+        RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
+        for (RIPv2Entry ripEntry : ripPacket.getEntries()) {
+            int distance = ripEntry.getMetric() + 1;
+            int ip = ripEntry.getAddress();
+            int mask = ripEntry.getSubnetMask();
+            int gatewayAddress = ipPacket.getSourceAddress();
+            int subnet = mask & ip;
+
+            RouteEntry routeEntry = routeTable.lookup(subnet);
+            if (routeEntry == null) {
+                routeEntry = new RouteEntry(ip, gatewayAddress, mask, inIface);
+                routeEntry.distance = distance;
+                routeEntry.lastValidTime = System.currentTimeMillis() + TIMEOUT;
+                routeTable.insert(routeEntry);
+            } else {
+                if (routeEntry.distance > distance) {
+                    routeEntry.setGatewayAddress(gatewayAddress);
+                    routeEntry.setInterface(inIface);
+                    routeEntry.distance = distance;
+                }
+                routeEntry.lastValidTime = System.currentTimeMillis() + TIMEOUT;
+            }
         }
     }
 
@@ -133,7 +147,7 @@ class RIPHandler {
                 handleRequset(inIface);
                 break;
             case RIPv2.COMMAND_RESPONSE:
-                handleResponse(inIface);
+                handleResponse(ipPacket, inIface);
                 break;
         }
     }
