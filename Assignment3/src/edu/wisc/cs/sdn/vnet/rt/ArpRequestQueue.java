@@ -1,12 +1,11 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
-import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.packet.MACAddress;
-
 import java.util.LinkedList;
 import java.util.Queue;
+
+import edu.wisc.cs.sdn.vnet.Iface;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.MACAddress;
 
 class ArpRequestQueue {
     static private class QueueElement {
@@ -41,8 +40,7 @@ class ArpRequestQueue {
                 }
 
                 for (QueueElement e : queue) {
-                    IPv4 ipPacket = (IPv4) e.ethernetPacket.getPayload();
-                    arpHandler.icmpHandler.sendMessage(e.inIface, ipPacket, 3, 1);
+                    arpHandler.icmpHandler.sendMessage(e.inIface, e.ethernetPacket, 3, 1);
                 }
 
                 arpHandler.removeQueueFromTable(ipAddress);

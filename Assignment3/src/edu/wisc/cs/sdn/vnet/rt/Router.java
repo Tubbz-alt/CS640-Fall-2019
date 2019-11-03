@@ -158,7 +158,7 @@ public class Router extends Device
         // Check TTL
         ipPacket.setTtl((byte)(ipPacket.getTtl()-1));
 		if (0 == ipPacket.getTtl()) {
-			icmpHandler.sendMessage(inIface, ipPacket, 11, 0);
+			icmpHandler.sendMessage(inIface, etherPacket, 11, 0);
 			return;
 		}
 
@@ -166,7 +166,8 @@ public class Router extends Device
         ipPacket.resetChecksum();
 
 		if (ripHandler.isRipPacket(ipPacket)) {
-			ripHandler.handlePacket(ipPacket, inIface);
+			ripHandler.handlePacket(etherPacket, inIface);
+			return;
 		}
 
 		// Check if packet is destined for one of router's interfaces
@@ -175,12 +176,12 @@ public class Router extends Device
 				switch (ipPacket.getProtocol()) {
 					case IPv4.PROTOCOL_UDP:
 					case IPv4.PROTOCOL_TCP:
-						icmpHandler.sendMessage(inIface, ipPacket, 3, 3);
+						icmpHandler.sendMessage(inIface, etherPacket, 3, 3);
 						break;
 					case IPv4.PROTOCOL_ICMP:
 						ICMP icmp = (ICMP) ipPacket.getPayload();
 						if (icmp.getIcmpType() == 8) {
-							icmpHandler.sendEcho(inIface, ipPacket);
+							icmpHandler.sendEcho(inIface, etherPacket);
 						}
 						break;
 				}
@@ -208,7 +209,7 @@ public class Router extends Device
 
         // If no entry matched, do nothing
 		if (null == bestMatch) {
-			icmpHandler.sendMessage(inIface, ipPacket, 3, 0);
+			icmpHandler.sendMessage(inIface, etherPacket, 3, 0);
 			return;
 		}
 
@@ -235,22 +236,4 @@ public class Router extends Device
 
         this.sendPacket(etherPacket, outIface);
     }
-
-	MACAddress getMacByIp(int ipAddr) {
-		// Find matching route table entry
-		RouteEntry bestMatch = this.routeTable.lookup(ipAddr);
-
-		// If no entry matched, do nothing
-		if (null == bestMatch) { return null; }
-
-		// If no gateway, then nextHop is IP destination
-		int nextHop = bestMatch.getGatewayAddress();
-		if (0 == nextHop) { nextHop = ipAddr; }
-
-		// Set destination MAC address in Ethernet header
-		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
-		if (null == arpEntry) { return null; }
-
-		return arpEntry.getMac();
-	}
 }

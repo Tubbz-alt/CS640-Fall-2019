@@ -1,7 +1,10 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.*;
+import net.floodlightcontroller.packet.Data;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.ICMP;
+import net.floodlightcontroller.packet.IPv4;
 
 class ICMPHandler {
     private Router router;
@@ -31,32 +34,31 @@ class ICMPHandler {
                 .setPayload(icmp);
     }
 
-    private Ethernet createEthernetPacket(Iface inIface, IPv4 ipPacket, IPv4 payload) {
-        MACAddress destinationMACAddress = router.getMacByIp(ipPacket.getSourceAddress());
-        if (destinationMACAddress == null) return null;
-
+    private Ethernet createEthernetPacket(Iface inIface, byte[] destinationMACAddress, IPv4 payload) {
         return (Ethernet) new Ethernet()
                 .setEtherType(Ethernet.TYPE_IPv4)
                 .setSourceMACAddress(inIface.getMacAddress().toBytes())
-                .setDestinationMACAddress(destinationMACAddress.toBytes())
+                .setDestinationMACAddress(destinationMACAddress)
                 .setPayload(payload);
     }
 
-    void sendMessage(Iface inIface, IPv4 ipPacket, int icmpType, int icmpCode) {
+    void sendMessage(Iface inIface, Ethernet etherPacket, int icmpType, int icmpCode) {
+        IPv4 ipPacket = (IPv4) etherPacket.getPayload();
         Data data = createData(ipPacket);
         ICMP icmp = createIcmpPacket(icmpType, icmpCode, data);
         IPv4 payload = createIpPacket(ipPacket, icmp)
                 .setSourceAddress(inIface.getIpAddress());
-        Ethernet ether = createEthernetPacket(inIface, ipPacket, payload);
+        Ethernet ether = createEthernetPacket(inIface, etherPacket.getSourceMACAddress(), payload);
         if (ether != null) router.sendPacket(ether, inIface);
     }
 
-    void sendEcho(Iface inIface, IPv4 ipPacket) {
+    void sendEcho(Iface inIface, Ethernet etherPacket) {
+        IPv4 ipPacket = (IPv4) etherPacket.getPayload();
         Data data = new Data(ipPacket.getPayload().getPayload().serialize());
         ICMP icmp = createIcmpPacket(0, 0, data);
         IPv4 payload = createIpPacket(ipPacket, icmp)
                 .setSourceAddress(ipPacket.getDestinationAddress());
-        Ethernet ether = createEthernetPacket(inIface, ipPacket, payload);
+        Ethernet ether = createEthernetPacket(inIface, etherPacket.getSourceMACAddress(), payload);
         if (ether != null) router.sendPacket(ether, inIface);
     }
 }
