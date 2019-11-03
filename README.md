@@ -1,6 +1,13 @@
 # CS640
  
 # Some useful commands
+
+- To run mininet
+
+    ```sh
+    sudo ./run_mininet.py topos/single_sw.topo -a
+    ```
+
 - To start all iperf servers: 
 
     ```sh
@@ -41,18 +48,42 @@
     sudo mn -c
     ```
 
- - To start switch
-
-    ```sh
-    java -jar VirtualNetwork.jar -v r1 -r rtable.r1 -a arp_cache &
-    java -jar VirtualNetwork.jar -v r2 -r rtable.r2 -a arp_cache &
-    java -jar VirtualNetwork.jar -v r3 -r rtable.r3 -a arp_cache &
-    ```
-
- - To start router
+ - To start switch with route table and ARP cache
  
     ```sh
     java -jar VirtualNetwork.jar -v s1 &
     java -jar VirtualNetwork.jar -v s2 &
     java -jar VirtualNetwork.jar -v s3 &
+    java -jar VirtualNetwork.jar -v s4 &
+    java -jar VirtualNetwork.jar -v s5 &
+    ```
+
+ - To start router with route table
+
+    ```sh
+    java -jar VirtualNetwork.jar -v r1 -r rtable.r1 &
+    java -jar VirtualNetwork.jar -v r2 -r rtable.r2 &
+    java -jar VirtualNetwork.jar -v r3 -r rtable.r3 &
+    java -jar VirtualNetwork.jar -v r4 -r rtable.r4 &
+    java -jar VirtualNetwork.jar -v r5 -r rtable.r5 &
+    ```
+    
+ - To start router with ARP cache
+
+    ```sh
+   	java -jar VirtualNetwork.jar -v r1 -a arp_cache &
+    java -jar VirtualNetwork.jar -v r2 -a arp_cache &
+    java -jar VirtualNetwork.jar -v r3 -a arp_cache &
+    java -jar VirtualNetwork.jar -v r4 -a arp_cache &
+    java -jar VirtualNetwork.jar -v r5 -a arp_cache &
+    ```
+    
+- To start router
+    
+    ```sh
+    java -jar VirtualNetwork.jar -v r1 &
+    java -jar VirtualNetwork.jar -v r2 &
+    java -jar VirtualNetwork.jar -v r3 &
+    java -jar VirtualNetwork.jar -v r4 &
+    java -jar VirtualNetwork.jar -v r5 &
     ```
