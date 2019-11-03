@@ -428,6 +428,13 @@ public class Ethernet extends BasePacket {
                 sb.append(((UDP) pkt).getSourcePort());
                 sb.append("\ntp_dst: ");
                 sb.append(((UDP) pkt).getDestinationPort());
+
+                
+                if (pkt.getPayload() instanceof RIPv2) {
+                    RIPv2 ripPacket = (RIPv2) pkt.getPayload();
+                    sb.append("\nrip_command: ");
+                    sb.append(ripPacket.getCommand() == 1 ? "Request" : "Response");
+                } 
             }
 
             if (pkt instanceof ICMP) {
