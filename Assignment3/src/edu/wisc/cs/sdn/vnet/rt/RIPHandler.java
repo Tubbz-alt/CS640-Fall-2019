@@ -103,8 +103,13 @@ class RIPHandler {
         router.sendPacket(ethernetPacket, inIface);
     }
 
-    private void handleRequset(Iface inIface) {
-        sendResponse(inIface);
+    private void handleRequset(Ethernet etherPacket, Iface inIface) {
+        IPv4 inIpPacket = (IPv4) etherPacket.getPayload();
+        RIPv2 ripPacket = createRipResponsePacket();
+        UDP udpPacket = createUdpPacket(ripPacket);
+        IPv4 ipPacket = createIpPacket(inIface, udpPacket).setDestinationAddress(inIpPacket.getSourceAddress());
+        Ethernet ethernetPacket = createEthernetPacket(inIface, ipPacket).setDestinationMACAddress(etherPacket.getSourceMACAddress());
+        router.sendPacket(ethernetPacket, inIface);
     }
 
     private void handleResponse(IPv4 ipPacket, Iface inIface) {
@@ -153,11 +158,12 @@ class RIPHandler {
                 ((UDP) ipPacket.getPayload()).getDestinationPort() == UDP.RIP_PORT;
     }
 
-    void handlePacket(IPv4 ipPacket, Iface inIface) {
+    void handlePacket(Ethernet etherPacket, Iface inIface) {
+        IPv4 ipPacket = (IPv4) etherPacket.getPayload();
         RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
         switch (ripPacket.getCommand()) {
             case RIPv2.COMMAND_REQUEST:
-                handleRequset(inIface);
+                handleRequset(etherPacket, inIface);
                 break;
             case RIPv2.COMMAND_RESPONSE:
                 handleResponse(ipPacket, inIface);
