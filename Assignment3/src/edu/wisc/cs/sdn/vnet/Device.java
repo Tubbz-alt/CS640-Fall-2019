@@ -3,9 +3,8 @@ package edu.wisc.cs.sdn.vnet;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.floodlightcontroller.packet.Ethernet;
-
 import edu.wisc.cs.sdn.vnet.vns.VNSComm;
+import net.floodlightcontroller.packet.Ethernet;
 
 /**
  * @author Aaron Gember-Jacobson
@@ -107,8 +106,11 @@ public abstract class Device
 	 * @param iface interface on which to send the packet
 	 * @return true if the packet was sent successfully, otherwise false
 	 */
-	public boolean sendPacket(Ethernet etherPacket, Iface iface)
-	{ return this.vnsComm.sendPacket(etherPacket, iface.getName()); }
+	public boolean sendPacket(Ethernet etherPacket, Iface iface) { 
+		System.out.println("*** -> Sent packet: " +
+                etherPacket.toString().replace("\n", "\n\t"));
+		return this.vnsComm.sendPacket(etherPacket, iface.getName()); 
+	}
 	
 	public abstract void handlePacket(Ethernet etherPacket, Iface inIface);
 }
