@@ -32,9 +32,7 @@ class RIPHandler {
             public void run() {
                 while (true) {
                     try {
-                        for (Iface iface : router.getInterfaces().values()) {
-                            sendResponse(iface);
-                        }
+                        sendResponse();
                         Thread.sleep(10000);
                     } catch (InterruptedException ignored) {}
                 }
@@ -95,12 +93,14 @@ class RIPHandler {
         }
     }
 
-    private void sendResponse(Iface inIface) {
+    private void sendResponse() {
         RIPv2 ripPacket = createRipResponsePacket();
         UDP udpPacket = createUdpPacket(ripPacket);
-        IPv4 ipPacket = createIpPacket(inIface, udpPacket);
-        Ethernet ethernetPacket = createEthernetPacket(inIface, ipPacket);
-        router.sendPacket(ethernetPacket, inIface);
+        for (Iface iface : router.getInterfaces().values()) {
+            IPv4 ipPacket = createIpPacket(iface, udpPacket);
+            Ethernet ethernetPacket = createEthernetPacket(iface, ipPacket);
+            router.sendPacket(ethernetPacket, iface);
+        }
     }
 
     private void handleRequset(Ethernet etherPacket, Iface inIface) {
@@ -114,6 +114,7 @@ class RIPHandler {
 
     private void handleResponse(IPv4 ipPacket, Iface inIface) {
         RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
+        boolean update = false;
         for (RIPv2Entry ripEntry : ripPacket.getEntries()) {
             int distance = ripEntry.getMetric() + 1;
             int ip = ripEntry.getAddress();
@@ -127,15 +128,19 @@ class RIPHandler {
                 routeEntry.distance = distance;
                 routeEntry.lastValidTime = System.currentTimeMillis() + TIMEOUT;
                 routeTable.insert(routeEntry);
+                update = true;
             } else {
                 if (routeEntry.distance > distance) {
                     routeEntry.setGatewayAddress(gatewayAddress);
                     routeEntry.setInterface(inIface);
                     routeEntry.distance = distance;
+                    update = true;
                 }
                 routeEntry.lastValidTime = Math.max(System.currentTimeMillis() + TIMEOUT, routeEntry.lastValidTime);
             }
         }
+        if (update)
+            sendResponse();
     }
 
     private boolean isRipPacketIp(IPv4 ipPacket) {
