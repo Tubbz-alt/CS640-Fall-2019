@@ -133,8 +133,22 @@ class RIPHandler {
         }
     }
 
+    private boolean isRipPacketIp(IPv4 ipPacket) {
+        if (ipPacket.getDestinationAddress() == RIPHandler.RIP_IP_ADDRESS){
+            return true;
+        }
+
+        for (Iface iface : this.router.getInterfaces().values()) {
+			if (ipPacket.getDestinationAddress() == iface.getIpAddress()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     boolean isRipPacket(IPv4 ipPacket) {
-        return ipPacket.getDestinationAddress() == RIPHandler.RIP_IP_ADDRESS &&
+        return isRipPacketIp(ipPacket) &&
                 ipPacket.getProtocol() == IPv4.PROTOCOL_UDP &&
                 ((UDP) ipPacket.getPayload()).getDestinationPort() == UDP.RIP_PORT;
     }
