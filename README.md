@@ -87,3 +87,16 @@
     java -jar VirtualNetwork.jar -v r4 &
     java -jar VirtualNetwork.jar -v r5 &
     ```
+
+- To dump the flow table
+
+    ```sh
+    sudo ovs-ofctl -O OpenFlow13 dump-flows s2
+    ```
+    
+- To turn down a switch
+
+
+    ```sh
+    sudo ovs-vsctl del-br s1
+    ```
