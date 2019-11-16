@@ -1,6 +1,7 @@
 package edu.wisc.cs.sdn.apps.l3routing;
 
 import edu.wisc.cs.sdn.apps.util.Host;
+import edu.wisc.cs.sdn.apps.util.RuleUtils;
 import edu.wisc.cs.sdn.apps.util.SwitchCommands;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
@@ -18,10 +19,7 @@ import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryListener;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryService;
 import net.floodlightcontroller.routing.Link;
 import org.openflow.protocol.OFMatch;
-import org.openflow.protocol.action.OFAction;
-import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.instruction.OFInstruction;
-import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,22 +81,13 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         this.graph = new Graph(getSwitches().keySet());
     }
 
-    public void installRule(IOFSwitch currentSwitch, int switchPort, int ipAddress){
-        OFMatch matchCriteria = new OFMatch();
-        matchCriteria.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
-        matchCriteria.setNetworkDestination(ipAddress);
+    public void installRule(IOFSwitch currentSwitch, int switchPort, int ipAddress) {
+        OFMatch matchCriteria = new OFMatch()
+                .setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+                .setNetworkDestination(ipAddress);
 
-        OFActionOutput actionOutput = new OFActionOutput();
-        actionOutput.setPort(switchPort);
-
-        OFInstructionApplyActions instruction = new OFInstructionApplyActions();
-        List<OFAction> actions = new ArrayList<OFAction>();
-        actions.add(actionOutput);
-        instruction.setActions(actions);
-
+        List<OFInstruction> instructions = RuleUtils.getRedirectToPortInstructions(switchPort);
         SwitchCommands.removeRules(currentSwitch, table, matchCriteria);
-        List<OFInstruction> instructions = new ArrayList<OFInstruction>();
-        instructions.add(instruction);
         SwitchCommands.installRule(currentSwitch, table, SwitchCommands.DEFAULT_PRIORITY, matchCriteria, instructions);
     }
 
