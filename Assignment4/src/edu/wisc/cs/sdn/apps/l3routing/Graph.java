@@ -16,6 +16,14 @@ public class Graph {
             this.link = link;
             this.distance = distance;
         }
+
+        @Override
+        public String toString() {
+            return "LinkDistancePair{" +
+                    "distance=" + distance +
+                    ", link=" + link +
+                    '}';
+        }
     }
 
     Graph(Collection<Long> switchIds) {
@@ -98,5 +106,12 @@ public class Graph {
         for (Map<Long, LinkDistancePair> map : table.values()) {
             map.remove(switchId);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Graph{" +
+                "table=" + table +
+                '}';
     }
 }
