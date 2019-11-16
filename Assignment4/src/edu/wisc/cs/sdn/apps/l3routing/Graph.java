@@ -30,11 +30,7 @@ public class Graph {
         initTable(switchIds);
     }
 
-    private Map<Long, Map<Long, LinkDistancePair>> table;
-
-    Map<Long, Map<Long, LinkDistancePair>> getTable() {
-        return table;
-    }
+    Map<Long, Map<Long, LinkDistancePair>> table;
 
     private void initTable(Collection<Long> switchIds) {
         table = new HashMap<Long, Map<Long, LinkDistancePair>>();
@@ -58,7 +54,6 @@ public class Graph {
 
         while (true) {
             boolean updated = false;
-            // for each link
             for (Link link : links) {
                 for (long dest : table.keySet()) {
                     if (dest == link.getSrc() || dest == link.getDst())

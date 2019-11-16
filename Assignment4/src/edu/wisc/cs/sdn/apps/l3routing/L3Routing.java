@@ -107,7 +107,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
     }
 
     public void installSwitchRules() {
-        for (Map.Entry<Long, Map<Long, Graph.LinkDistancePair>> entry : this.graph.getTable().entrySet()) {
+        for (Map.Entry<Long, Map<Long, Graph.LinkDistancePair>> entry : this.graph.table.entrySet()) {
             long currentSwitchId = entry.getKey();
             Map<Long, Graph.LinkDistancePair> linkMap = entry.getValue();
 
