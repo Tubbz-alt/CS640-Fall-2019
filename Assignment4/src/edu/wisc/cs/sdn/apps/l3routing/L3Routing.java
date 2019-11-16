@@ -84,6 +84,25 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         this.graph = new Graph(getSwitches().keySet());
     }
 
+    public void installHostRule(Host host) {
+        OFMatch matchCriteria = new OFMatch();
+        matchCriteria.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
+        matchCriteria.setNetworkDestination(host.getIPv4Address());
+
+        OFActionOutput actionOutput = new OFActionOutput();
+        actionOutput.setPort(host.getPort());
+
+        OFInstructionApplyActions instruction = new OFInstructionApplyActions();
+        List<OFAction> actions = new ArrayList<OFAction>();
+        actions.add(actionOutput);
+        instruction.setActions(actions);
+
+        SwitchCommands.removeRules(host.getSwitch(), table, matchCriteria);
+        List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+        instructions.add(instruction);
+        SwitchCommands.installRule(host.getSwitch(), table, SwitchCommands.DEFAULT_PRIORITY, matchCriteria, instructions);
+    }
+
     public void installRules() {
         for (Map.Entry<Long, Map<Long, Graph.LinkDistancePair>> entry : this.graph.getTable().entrySet()) {
             long currentSwitchId = entry.getKey();
@@ -146,6 +165,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
             log.info(String.format("Host %s added", host.getName()));
             this.knownHosts.put(device, host);
 
+            installHostRule(host);
             installRules();
         }
     }
@@ -187,6 +207,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         log.info(String.format("Host %s moved to s%d:%d", host.getName(),
                 host.getSwitch().getId(), host.getPort()));
 
+        installHostRule(host);
         installRules();
     }
 
