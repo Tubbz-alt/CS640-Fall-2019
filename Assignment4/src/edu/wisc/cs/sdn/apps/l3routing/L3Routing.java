@@ -93,7 +93,9 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
             for (Host host : getHosts()) {
                 long destinationSwitch = host.getSwitch().getId();
-                Link link = linkMap.get(destinationSwitch).link;
+                Graph.LinkDistancePair linkDistancePair = linkMap.get(destinationSwitch);
+                if (linkDistancePair == null) continue;
+                Link link = linkDistancePair.link;
 
                 OFMatch matchCriteria = new OFMatch();
                 matchCriteria.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
