@@ -78,7 +78,7 @@ public class Graph {
     }
 
     void addSwitch(Long switchId) {
-        table.put(switchId, new HashMap<>());
+        table.put(switchId, new HashMap<Long, LinkDistancePair>());
     }
 
     void removeSwitch(Long switchId) {
