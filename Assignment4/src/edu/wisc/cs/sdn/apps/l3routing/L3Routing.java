@@ -84,26 +84,30 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         this.graph = new Graph(getSwitches().keySet());
     }
 
-    public void installHostRule(Host host) {
+    public void installRule(IOFSwitch currentSwitch, int switchPort, int ipAddress){
         OFMatch matchCriteria = new OFMatch();
         matchCriteria.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
-        matchCriteria.setNetworkDestination(host.getIPv4Address());
+        matchCriteria.setNetworkDestination(ipAddress);
 
         OFActionOutput actionOutput = new OFActionOutput();
-        actionOutput.setPort(host.getPort());
+        actionOutput.setPort(switchPort);
 
         OFInstructionApplyActions instruction = new OFInstructionApplyActions();
         List<OFAction> actions = new ArrayList<OFAction>();
         actions.add(actionOutput);
         instruction.setActions(actions);
 
-        SwitchCommands.removeRules(host.getSwitch(), table, matchCriteria);
+        SwitchCommands.removeRules(currentSwitch, table, matchCriteria);
         List<OFInstruction> instructions = new ArrayList<OFInstruction>();
         instructions.add(instruction);
-        SwitchCommands.installRule(host.getSwitch(), table, SwitchCommands.DEFAULT_PRIORITY, matchCriteria, instructions);
+        SwitchCommands.installRule(currentSwitch, table, SwitchCommands.DEFAULT_PRIORITY, matchCriteria, instructions);
     }
 
-    public void installRules() {
+    public void installHostRule(Host host) {
+        installRule(host.getSwitch(), host.getPort(), host.getIPv4Address());
+    }
+
+    public void installSwitchRules() {
         for (Map.Entry<Long, Map<Long, Graph.LinkDistancePair>> entry : this.graph.getTable().entrySet()) {
             long currentSwitchId = entry.getKey();
             Map<Long, Graph.LinkDistancePair> linkMap = entry.getValue();
@@ -116,22 +120,8 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
                 if (linkDistancePair == null) continue;
                 Link link = linkDistancePair.link;
 
-                OFMatch matchCriteria = new OFMatch();
-                matchCriteria.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
-                matchCriteria.setNetworkDestination(host.getIPv4Address());
-
-                OFActionOutput actionOutput = new OFActionOutput();
-                actionOutput.setPort(LinkUtils.getOtherPort(link, currentSwitchId));
-
-                OFInstructionApplyActions instruction = new OFInstructionApplyActions();
-                List<OFAction> actions = new ArrayList<OFAction>();
-                actions.add(actionOutput);
-                instruction.setActions(actions);
-
-                SwitchCommands.removeRules(currentSwitch, table, matchCriteria);
-                List<OFInstruction> instructions = new ArrayList<OFInstruction>();
-                instructions.add(instruction);
-                SwitchCommands.installRule(currentSwitch, table, SwitchCommands.DEFAULT_PRIORITY, matchCriteria, instructions);
+                int port = LinkUtils.getOtherPort(link, currentSwitchId);
+                installRule(currentSwitch, port, host.getIPv4Address());
             }
         }
     }
@@ -166,7 +156,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
             this.knownHosts.put(device, host);
 
             installHostRule(host);
-            installRules();
+            installSwitchRules();
         }
     }
 
@@ -184,7 +174,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         log.info(String.format("Host %s is no longer attached to a switch",
                 host.getName()));
 
-        installRules();
+        installSwitchRules();
     }
 
     /**
@@ -208,7 +198,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
                 host.getSwitch().getId(), host.getPort()));
 
         installHostRule(host);
-        installRules();
+        installSwitchRules();
     }
 
     /**
@@ -223,7 +213,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
         this.graph.addSwitch(switchId);
         this.graph.updateTable(getLinks());
-        installRules();
+        installSwitchRules();
     }
 
     /**
@@ -238,7 +228,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
         this.graph.removeSwitch(switchId);
         this.graph.recomputeTable(getLinks());
-        installRules();
+        installSwitchRules();
     }
 
     /**
@@ -264,7 +254,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         }
 
         this.graph.recomputeTable(getLinks());
-        installRules();
+        installSwitchRules();
     }
 
     /**
