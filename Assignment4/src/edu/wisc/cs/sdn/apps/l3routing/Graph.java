@@ -22,7 +22,7 @@ public class Graph {
             return "LinkDistancePair{" +
                     "distance=" + distance +
                     ", link=" + link +
-                    '}';
+                    "}\n";
         }
     }
 
@@ -49,19 +49,11 @@ public class Graph {
 
     void updateTable(Collection<Link> links) {
         for (Link link : links) {
-            Map<Long, LinkDistancePair> srcEntry = table.get(link.getSrc());
-            if (srcEntry == null) {
-                srcEntry = new HashMap<Long, LinkDistancePair>();
-                table.put(link.getSrc(), srcEntry);
-            }
-            srcEntry.put(link.getDst(), new LinkDistancePair(link, 1));
+            addSwitch(link.getSrc());
+            table.get(link.getSrc()).put(link.getDst(), new LinkDistancePair(link, 1));
 
-            Map<Long, LinkDistancePair> destEntry = table.get(link.getDst());
-            if (destEntry == null) {
-                destEntry = new HashMap<Long, LinkDistancePair>();
-                table.put(link.getDst(), destEntry);
-            }
-            destEntry.put(link.getSrc(), new LinkDistancePair(link, 1));
+            addSwitch(link.getDst());
+            table.get(link.getDst()).put(link.getSrc(), new LinkDistancePair(link, 1));
         }
 
         while (true) {
@@ -99,7 +91,10 @@ public class Graph {
     }
 
     void addSwitch(Long switchId) {
-        table.put(switchId, new HashMap<Long, LinkDistancePair>());
+        Map<Long, LinkDistancePair> srcEntry = table.get(switchId);
+        if (srcEntry == null) {
+            table.put(switchId, new HashMap<Long, LinkDistancePair>());
+        }
     }
 
     void removeSwitch(Long switchId) {
