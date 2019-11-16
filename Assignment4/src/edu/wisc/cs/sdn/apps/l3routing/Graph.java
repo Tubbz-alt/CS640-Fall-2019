@@ -41,8 +41,19 @@ public class Graph {
 
     void updateTable(Collection<Link> links) {
         for (Link link : links) {
-            table.get(link.getSrc()).put(link.getDst(), new LinkDistancePair(link, 1));
-            table.get(link.getDst()).put(link.getSrc(), new LinkDistancePair(link, 1));
+            Map<Long, LinkDistancePair> srcEntry = table.get(link.getSrc());
+            if (srcEntry == null) {
+                srcEntry = new HashMap<Long, LinkDistancePair>();
+                table.put(link.getSrc(), srcEntry);
+            }
+            srcEntry.put(link.getDst(), new LinkDistancePair(link, 1));
+
+            Map<Long, LinkDistancePair> destEntry = table.get(link.getDst());
+            if (destEntry == null) {
+                destEntry = new HashMap<Long, LinkDistancePair>();
+                table.put(link.getDst(), destEntry);
+            }
+            destEntry.put(link.getSrc(), new LinkDistancePair(link, 1));
         }
 
         while (true) {
