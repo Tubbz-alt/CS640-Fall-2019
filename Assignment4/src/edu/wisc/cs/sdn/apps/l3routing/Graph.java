@@ -29,13 +29,13 @@ public class Graph {
     }
 
     private void initTable(Collection<Long> switchIds) {
-        table = new HashMap<>();
+        table = new HashMap<Long, Map<Long, LinkDistancePair>>();
         for (long switchId : switchIds)
-            table.put(switchId, new HashMap<>());
+            table.put(switchId, new HashMap<Long, LinkDistancePair>());
     }
 
     void recomputeTable(Collection<Link> links) {
-        initTable(new ArrayList<>(table.keySet()));
+        initTable(new ArrayList<Long>(table.keySet()));
         updateTable(links);
     }
 
