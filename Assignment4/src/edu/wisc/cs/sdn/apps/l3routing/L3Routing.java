@@ -19,6 +19,7 @@ import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryListener;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryService;
 import net.floodlightcontroller.routing.Link;
 import org.openflow.protocol.OFMatch;
+import org.openflow.protocol.OFOXMFieldType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.instruction.OFInstruction;
@@ -87,7 +88,8 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
     public void installRule(IOFSwitch currentSwitch, int switchPort, int ipAddress){
         OFMatch matchCriteria = new OFMatch();
         matchCriteria.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
-        matchCriteria.setNetworkDestination(ipAddress);
+        matchCriteria.setField(OFOXMFieldType.IPV4_DST, ipAddress);
+//        matchCriteria.setNetworkDestination(ipAddress);
 
         OFActionOutput actionOutput = new OFActionOutput();
         actionOutput.setPort(switchPort);
@@ -214,7 +216,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         this.graph.addSwitch(switchId);
         this.graph.updateTable(getLinks());
         installSwitchRules();
-        log.debug(this.graph.toString());
+        log.info(this.graph.toString());
     }
 
     /**
@@ -256,7 +258,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
         this.graph.recomputeTable(getLinks());
         installSwitchRules();
-        log.debug(this.graph.toString());
+        log.info(this.graph.toString());
     }
 
     /**
