@@ -256,6 +256,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
         this.graph.recomputeTable(getLinks());
         installSwitchRules();
+        log.debug(this.graph.toString());
     }
 
     /**

@@ -69,20 +69,22 @@ public class Graph {
             // for each link
             for (Link link : links) {
                 for (long dest : table.keySet()) {
-                    LinkDistancePair linkSrcToDest = table.get(link.getSrc()).get(dest);
-                    LinkDistancePair linkDestToDest = table.get(link.getDst()).get(dest);
-                    if (linkSrcToDest == null && linkDestToDest == null) {
+                    if (dest == link.getSrc() || dest == link.getDst())
                         continue;
-                    } else if (linkSrcToDest == null) {
-                        table.get(link.getSrc()).put(dest, new LinkDistancePair(link, linkDestToDest.distance + 1));
-                    } else if (linkDestToDest == null) {
-                        table.get(link.getDst()).put(dest, new LinkDistancePair(link, linkSrcToDest.distance + 1));
-                    } else if (linkSrcToDest.distance > linkDestToDest.distance + 1) {
-                        linkSrcToDest.link = link;
-                        linkSrcToDest.distance = linkDestToDest.distance + 1;
-                    } else if (linkDestToDest.distance > linkSrcToDest.distance + 1) {
-                        linkDestToDest.link = link;
-                        linkDestToDest.distance = linkSrcToDest.distance + 1;
+                    LinkDistancePair leftToDest = table.get(link.getSrc()).get(dest);
+                    LinkDistancePair rightToDest = table.get(link.getDst()).get(dest);
+                    if (leftToDest == null && rightToDest == null) {
+                        continue;
+                    } else if (leftToDest == null) {
+                        table.get(link.getSrc()).put(dest, new LinkDistancePair(link, rightToDest.distance + 1));
+                    } else if (rightToDest == null) {
+                        table.get(link.getDst()).put(dest, new LinkDistancePair(link, leftToDest.distance + 1));
+                    } else if (leftToDest.distance > rightToDest.distance + 1) {
+                        leftToDest.link = link;
+                        leftToDest.distance = rightToDest.distance + 1;
+                    } else if (rightToDest.distance > leftToDest.distance + 1) {
+                        rightToDest.link = link;
+                        rightToDest.distance = leftToDest.distance + 1;
                     } else {
                         continue;
                     }
@@ -110,8 +112,6 @@ public class Graph {
 
     @Override
     public String toString() {
-        return "Graph{" +
-                "table=" + table +
-                '}';
+        return table.toString();
     }
 }
