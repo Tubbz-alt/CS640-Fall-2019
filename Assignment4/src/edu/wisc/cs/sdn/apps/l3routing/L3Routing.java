@@ -1,7 +1,6 @@
 package edu.wisc.cs.sdn.apps.l3routing;
 
 import edu.wisc.cs.sdn.apps.util.Host;
-import edu.wisc.cs.sdn.apps.util.LinkUtils;
 import edu.wisc.cs.sdn.apps.util.SwitchCommands;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
@@ -19,7 +18,6 @@ import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryListener;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryService;
 import net.floodlightcontroller.routing.Link;
 import org.openflow.protocol.OFMatch;
-import org.openflow.protocol.OFOXMFieldType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.instruction.OFInstruction;
@@ -88,8 +86,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
     public void installRule(IOFSwitch currentSwitch, int switchPort, int ipAddress){
         OFMatch matchCriteria = new OFMatch();
         matchCriteria.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
-        matchCriteria.setField(OFOXMFieldType.IPV4_DST, ipAddress);
-//        matchCriteria.setNetworkDestination(ipAddress);
+        matchCriteria.setNetworkDestination(ipAddress);
 
         OFActionOutput actionOutput = new OFActionOutput();
         actionOutput.setPort(switchPort);
@@ -122,7 +119,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
                 if (linkDistancePair == null) continue;
                 Link link = linkDistancePair.link;
 
-                int port = LinkUtils.getOtherPort(link, currentSwitchId);
+                int port = link.getSrc() == currentSwitchId ? link.getSrcPort() : link.getDstPort();
                 installRule(currentSwitch, port, host.getIPv4Address());
             }
         }
