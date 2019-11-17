@@ -217,8 +217,9 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		LoadBalancerInstance instance = instances.get(virtualIp);
 		if (instance == null) return;
 
-		byte[] hostMac = instance.getVirtualMAC();
 		int hostIp = instance.getNextHostIP();
+		byte[] virtualMac = instance.getVirtualMAC();
+		byte[] hostMac = getHostMACAddress(hostIp);
 
 		OFMatch matchToHost = new OFMatch()
 				.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
@@ -239,7 +240,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				.setTransportSource(hostPort)
 				.setTransportDestination(clientPort);
 
-		List<OFInstruction> instructionsFromHost = RuleUtils.getRewriteSourceInstructions(hostMac, hostIp);
+		List<OFInstruction> instructionsFromHost = RuleUtils.getRewriteSourceInstructions(virtualMac, virtualIp);
 		SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchFromHost, instructionsFromHost, (short) 0, (short) 20);
 	}
 
