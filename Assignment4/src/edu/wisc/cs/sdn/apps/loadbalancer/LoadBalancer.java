@@ -4,7 +4,6 @@ import edu.wisc.cs.sdn.apps.l3routing.L3Routing;
 import edu.wisc.cs.sdn.apps.util.ArpServer;
 import edu.wisc.cs.sdn.apps.util.RuleUtils;
 import edu.wisc.cs.sdn.apps.util.SwitchCommands;
-import net.floodlightcontroller.core.*;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFMessageListener;
@@ -22,6 +21,7 @@ import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.TCP;
 import net.floodlightcontroller.util.MACAddress;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
@@ -91,11 +91,6 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		this.floodlightProv = context.getServiceImpl(
 				IFloodlightProviderService.class);
         this.deviceProv = context.getServiceImpl(IDeviceService.class);
-
-        /*********************************************************************/
-        /* TODO: Initialize other class variables, if necessary              */
-
-        /*********************************************************************/
 	}
 
 	/**
@@ -108,30 +103,6 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		log.info(String.format("Starting %s...", MODULE_NAME));
 		this.floodlightProv.addOFSwitchListener(this);
 		this.floodlightProv.addOFMessageListener(OFType.PACKET_IN, this);
-
-		/*********************************************************************/
-		/* TODO: Perform other tasks, if necessary                           */
-
-		/*********************************************************************/
-	}
-
-	public void installNewSwitchRule(IOFSwitch currentSwitch, int virtualIp) {
-		OFMatch matchTcp = new OFMatch()
-				.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
-				.setNetworkDestination(virtualIp)
-				.setNetworkProtocol(OFMatch.IP_PROTO_TCP);
-
-		OFMatch matchArp = new OFMatch()
-				.setDataLayerType(OFMatch.ETH_TYPE_ARP)
-				.setNetworkDestination(virtualIp);
-
-		List<OFInstruction> instructions = RuleUtils.getRedirectToControllerInstructions();
-
-		SwitchCommands.removeRules(currentSwitch, table, matchTcp);
-		SwitchCommands.removeRules(currentSwitch, table, matchArp);
-
-		SwitchCommands.installRule(currentSwitch, table, SwitchCommands.MAX_PRIORITY, matchTcp, instructions);
-		SwitchCommands.installRule(currentSwitch, table, SwitchCommands.MAX_PRIORITY, matchArp, instructions);
 	}
 
 	/**
@@ -145,7 +116,22 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		log.info(String.format("Switch s%d added", switchId));
 
 		for (Integer virtualIp : instances.keySet()) {
-			installNewSwitchRule(sw, virtualIp);
+			OFMatch matchTcp = new OFMatch()
+					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+					.setNetworkDestination(virtualIp)
+					.setNetworkProtocol(OFMatch.IP_PROTO_TCP);
+
+			OFMatch matchArp = new OFMatch()
+					.setDataLayerType(OFMatch.ETH_TYPE_ARP)
+					.setNetworkDestination(virtualIp);
+
+			List<OFInstruction> instructions = RuleUtils.getRedirectToControllerInstructions();
+
+			SwitchCommands.removeRules(sw, table, matchTcp);
+			SwitchCommands.removeRules(sw, table, matchArp);
+
+			SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchTcp, instructions);
+			SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchArp, instructions);
 		}
 
 		OFInstructionGotoTable instruction = new OFInstructionGotoTable(L3Routing.table);
@@ -175,22 +161,12 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		ethPkt.deserialize(pktIn.getPacketData(), 0,
 				pktIn.getPacketData().length);
 
-		/*********************************************************************/
-		/* TODO: Send an ARP reply for ARP requests for virtual IPs; for TCP */
-		/*       SYNs sent to a virtual IP, select a host and install        */
-		/*       connection-specific rules to rewrite IP and MAC addresses;  */
-		/*       ignore all other packets                                    */
-
-		/*********************************************************************/
-
 		switch (ethPkt.getEtherType()) {
 			case OFMatch.ETH_TYPE_ARP:
-				Ethernet outEthPkt = constructArpReply(ethPkt);
-				if (outEthPkt == null) break;
-				SwitchCommands.sendPacket(sw, (short) pktIn.getInPort(), outEthPkt);
+				handleArpReply(sw, ethPkt, (short) pktIn.getInPort());
 				break;
 			case OFMatch.ETH_TYPE_IPV4:
-				handleIpv4Received(ethPkt);
+				handleIpv4Received(sw, ethPkt);
 				break;
 		}
 
@@ -198,13 +174,13 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 	}
 
 
-	private Ethernet constructArpReply(Ethernet inEthPkt){
+	private void handleArpReply(IOFSwitch sw, Ethernet inEthPkt, short inPort){
 		ARP inArpPkt = (ARP) inEthPkt.getPayload();
-		if (inArpPkt.getOpCode() != ARP.OP_REQUEST) return null;
+		if (inArpPkt.getOpCode() != ARP.OP_REQUEST) return;
 
 		int ip = IPv4.toIPv4Address(inArpPkt.getTargetProtocolAddress());
 		LoadBalancerInstance instance = instances.get(ip);
-		if (instance == null) return null;
+		if (instance == null) return;
 		byte[] mac = instance.getVirtualMAC();
 
 		ARP outArpPkt = new ARP()
@@ -218,17 +194,54 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				.setSenderHardwareAddress(mac)
 				.setSenderProtocolAddress(ip);
 
-		return (Ethernet) new Ethernet()
+		Ethernet outEthPkt =  (Ethernet) new Ethernet()
 				.setEtherType(Ethernet.TYPE_ARP)
 				.setSourceMACAddress(mac)
 				.setDestinationMACAddress(inEthPkt.getSourceMACAddress())
 				.setPayload(outArpPkt);
+
+		SwitchCommands.sendPacket(sw, inPort, outEthPkt);
 	}
 
-	private void handleIpv4Received(Ethernet ethPkt){
+	private void handleIpv4Received(IOFSwitch sw, Ethernet inEthPkt) {
+		IPv4 inIpPkt = (IPv4) inEthPkt.getPayload();
+		TCP inTcpPkt = (TCP) inIpPkt.getPayload();
+		if (inTcpPkt.getFlags() != TCP_FLAG_SYN) return;
 
+		int clientIp = inIpPkt.getSourceAddress();
+		short clientPort = inTcpPkt.getSourcePort();
+		int virtualIp = inIpPkt.getDestinationAddress();
+		short hostPort = inTcpPkt.getDestinationPort();
+		byte protocol = inIpPkt.getProtocol();
+
+		LoadBalancerInstance instance = instances.get(virtualIp);
+		if (instance == null) return;
+
+		byte[] hostMac = instance.getVirtualMAC();
+		int hostIp = instance.getNextHostIP();
+
+		OFMatch matchToHost = new OFMatch()
+				.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+				.setNetworkProtocol(protocol)
+				.setNetworkSource(clientIp)
+				.setNetworkDestination(virtualIp)
+				.setTransportSource(clientPort)
+				.setTransportDestination(hostPort);
+
+		List<OFInstruction> instructionsToHost = RuleUtils.getRewriteDestinationInstructions(hostMac, hostIp);
+		SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchToHost, instructionsToHost, (short) 0, (short) 20);
+
+		OFMatch matchFromHost = new OFMatch()
+				.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+				.setNetworkProtocol(protocol)
+				.setNetworkSource(hostIp)
+				.setNetworkDestination(clientIp)
+				.setTransportSource(hostPort)
+				.setTransportDestination(clientPort);
+
+		List<OFInstruction> instructionsFromHost = RuleUtils.getRewriteSourceInstructions(hostMac, hostIp);
+		SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchFromHost, instructionsFromHost, (short) 0, (short) 20);
 	}
-
 
 
 	/**
