@@ -208,16 +208,18 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		TCP inTcpPkt = (TCP) inIpPkt.getPayload();
 		if (inTcpPkt.getFlags() != TCP_FLAG_SYN) return;
 
-		int clientIp = inIpPkt.getSourceAddress();
-		short clientPort = inTcpPkt.getSourcePort();
-		int virtualIp = inIpPkt.getDestinationAddress();
-		short hostPort = inTcpPkt.getDestinationPort();
-		byte protocol = inIpPkt.getProtocol();
-
-		LoadBalancerInstance instance = instances.get(virtualIp);
+		LoadBalancerInstance instance = instances.get(inIpPkt.getDestinationAddress());
 		if (instance == null) return;
 
+		byte protocol = inIpPkt.getProtocol();
+
+		short clientPort = inTcpPkt.getSourcePort();
+		short hostPort = inTcpPkt.getDestinationPort();
+
+		int clientIp = inIpPkt.getSourceAddress();
+		int virtualIp = inIpPkt.getDestinationAddress();
 		int hostIp = instance.getNextHostIP();
+
 		byte[] virtualMac = instance.getVirtualMAC();
 		byte[] hostMac = getHostMACAddress(hostIp);
 
