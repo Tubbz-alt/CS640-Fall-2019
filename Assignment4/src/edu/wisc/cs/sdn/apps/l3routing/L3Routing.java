@@ -202,7 +202,6 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
         this.graph.addSwitch(switchId);
         this.graph.updateTable(getLinks());
         installSwitchRules();
-        log.info(this.graph.toString());
     }
 
     /**
@@ -244,7 +243,6 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
         this.graph.recomputeTable(getLinks());
         installSwitchRules();
-        log.info(this.graph.toString());
     }
 
     /**
