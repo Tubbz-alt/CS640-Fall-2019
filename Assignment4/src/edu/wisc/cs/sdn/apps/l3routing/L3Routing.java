@@ -1,7 +1,7 @@
 package edu.wisc.cs.sdn.apps.l3routing;
 
 import edu.wisc.cs.sdn.apps.util.Host;
-import edu.wisc.cs.sdn.apps.util.RuleUtils;
+import edu.wisc.cs.sdn.apps.util.Instructions;
 import edu.wisc.cs.sdn.apps.util.SwitchCommands;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
@@ -86,7 +86,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
                 .setDataLayerType(OFMatch.ETH_TYPE_IPV4)
                 .setNetworkDestination(ipAddress);
 
-        List<OFInstruction> instructions = RuleUtils.getRedirectToPortInstructions(switchPort);
+        List<OFInstruction> instructions = Instructions.redirectToPort(switchPort);
         SwitchCommands.removeRules(currentSwitch, table, matchCriteria);
         SwitchCommands.installRule(currentSwitch, table, SwitchCommands.DEFAULT_PRIORITY, matchCriteria, instructions);
     }
