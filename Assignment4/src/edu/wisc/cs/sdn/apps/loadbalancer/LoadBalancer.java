@@ -205,6 +205,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 
 	private void handleIpv4Received(IOFSwitch sw, Ethernet inEthPkt) {
 		IPv4 inIpPkt = (IPv4) inEthPkt.getPayload();
+		if (inIpPkt.getProtocol() != IPv4.PROTOCOL_TCP) return;
 		TCP inTcpPkt = (TCP) inIpPkt.getPayload();
 		if (inTcpPkt.getFlags() != TCP_FLAG_SYN) return;
 
