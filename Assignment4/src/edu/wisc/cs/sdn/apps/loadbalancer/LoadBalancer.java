@@ -1,8 +1,7 @@
 package edu.wisc.cs.sdn.apps.loadbalancer;
 
-import edu.wisc.cs.sdn.apps.l3routing.L3Routing;
 import edu.wisc.cs.sdn.apps.util.ArpServer;
-import edu.wisc.cs.sdn.apps.util.RuleUtils;
+import edu.wisc.cs.sdn.apps.util.Instructions;
 import edu.wisc.cs.sdn.apps.util.SwitchCommands;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
@@ -28,7 +27,6 @@ import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.instruction.OFInstruction;
-import org.openflow.protocol.instruction.OFInstructionGotoTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,19 +123,16 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 					.setDataLayerType(OFMatch.ETH_TYPE_ARP)
 					.setNetworkDestination(virtualIp);
 
-			List<OFInstruction> instructions = RuleUtils.getRedirectToControllerInstructions();
+			List<OFInstruction> instructions = Instructions.redirectToController();
 
 			SwitchCommands.removeRules(sw, table, matchTcp);
 			SwitchCommands.removeRules(sw, table, matchArp);
 
-			SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchTcp, instructions);
-			SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchArp, instructions);
+			SwitchCommands.installRule(sw, table, (byte) 2, matchTcp, instructions);
+			SwitchCommands.installRule(sw, table, (byte) 2, matchArp, instructions);
 		}
 
-		OFInstructionGotoTable instruction = new OFInstructionGotoTable(L3Routing.table);
-		List<OFInstruction> instructions = new ArrayList<OFInstruction>();
-		instructions.add(instruction);
-		SwitchCommands.installRule(sw, table, SwitchCommands.DEFAULT_PRIORITY, new OFMatch(), instructions);
+		SwitchCommands.installRule(sw, table, SwitchCommands.DEFAULT_PRIORITY, new OFMatch(), Instructions.goToTable());
 	}
 
 	/**
@@ -194,7 +189,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				.setSenderHardwareAddress(mac)
 				.setSenderProtocolAddress(ip);
 
-		Ethernet outEthPkt =  (Ethernet) new Ethernet()
+		Ethernet outEthPkt = (Ethernet) new Ethernet()
 				.setEtherType(Ethernet.TYPE_ARP)
 				.setSourceMACAddress(mac)
 				.setDestinationMACAddress(inEthPkt.getSourceMACAddress())
@@ -208,6 +203,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		if (inIpPkt.getProtocol() != IPv4.PROTOCOL_TCP) return;
 		TCP inTcpPkt = (TCP) inIpPkt.getPayload();
 		if (inTcpPkt.getFlags() != TCP_FLAG_SYN) return;
+
+		log.info("Controller Received TCP SYN: " + inEthPkt);
 
 		LoadBalancerInstance instance = instances.get(inIpPkt.getDestinationAddress());
 		if (instance == null) return;
@@ -232,8 +229,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				.setTransportSource(clientPort)
 				.setTransportDestination(hostPort);
 
-		List<OFInstruction> instructionsToHost = RuleUtils.getRewriteDestinationInstructions(hostMac, hostIp);
-		SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchToHost, instructionsToHost, (short) 0, (short) 20);
+		SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchToHost,
+				Instructions.rewriteDest(hostMac, hostIp), (short) 0, (short) 20);
 
 		OFMatch matchFromHost = new OFMatch()
 				.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
@@ -243,8 +240,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				.setTransportSource(hostPort)
 				.setTransportDestination(clientPort);
 
-		List<OFInstruction> instructionsFromHost = RuleUtils.getRewriteSourceInstructions(virtualMac, virtualIp);
-		SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchFromHost, instructionsFromHost, (short) 0, (short) 20);
+		SwitchCommands.installRule(sw, table, SwitchCommands.MAX_PRIORITY, matchFromHost,
+				Instructions.rewriteSrc(virtualMac, virtualIp), (short) 0, (short) 20);
 	}
 
 
