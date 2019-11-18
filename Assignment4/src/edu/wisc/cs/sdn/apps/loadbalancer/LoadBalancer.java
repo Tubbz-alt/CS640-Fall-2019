@@ -204,8 +204,6 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		TCP inTcpPkt = (TCP) inIpPkt.getPayload();
 		if (inTcpPkt.getFlags() != TCP_FLAG_SYN) return;
 
-		log.info("Controller Received TCP SYN: " + inEthPkt);
-
 		LoadBalancerInstance instance = instances.get(inIpPkt.getDestinationAddress());
 		if (instance == null) return;
 
