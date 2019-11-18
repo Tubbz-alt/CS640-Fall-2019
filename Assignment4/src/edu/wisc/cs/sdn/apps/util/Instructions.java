@@ -16,6 +16,11 @@ import java.util.Collections;
 import java.util.List;
 
 public class Instructions {
+    public static List<OFInstruction> goToTable() {
+        return Collections.singletonList(
+                (OFInstruction) new OFInstructionGotoTable(L3Routing.table)
+        );
+    }
 
     private static List<OFInstruction> rewrite(OFOXMFieldType macType, byte[] mac, OFOXMFieldType ipType, int ip) {
         return Arrays.asList(
@@ -45,9 +50,5 @@ public class Instructions {
 
     public static List<OFInstruction> redirectToController() {
         return redirectToPort(OFPort.OFPP_CONTROLLER.getValue());
-    }
-
-    public static List<OFInstruction> goToTable() {
-        return Collections.singletonList((OFInstruction) new OFInstructionGotoTable(L3Routing.table));
     }
 }
