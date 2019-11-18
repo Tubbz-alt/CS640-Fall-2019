@@ -5,29 +5,22 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
+    <content url="file://$MODULE_DIR$/../floodlight-plus">
+      <sourceFolder url="file://$MODULE_DIR$/../floodlight-plus/src/test/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../floodlight-plus/lib/gen-java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../floodlight-plus/src/main/java" isTestSource="false" />
+    </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://$MODULE_DIR$/../floodlight-plus" />
+          <root url="file://$MODULE_DIR$/../floodlight-plus/lib" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
+          <root url="file://$MODULE_DIR$/../floodlight-plus/lib" />
           <root url="file://$MODULE_DIR$/../floodlight-plus/lib/gen-java" />
-          <root url="file://$MODULE_DIR$/../floodlight-plus/src/main/java" />
-          <root url="file://$MODULE_DIR$/../floodlight-plus/src/test/java" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/../floodlight-plus/lib" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file://$MODULE_DIR$/../floodlight-plus/lib" />
         </SOURCES>
         <jarDirectory url="file://$MODULE_DIR$/../floodlight-plus/lib" recursive="false" />
         <jarDirectory url="file://$MODULE_DIR$/../floodlight-plus/lib" recursive="false" type="SOURCES" />
