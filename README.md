@@ -1,14 +1,14 @@
 # CS640
  
-# Some useful commands
+### Some useful commands
 
-- To run mininet
+- Run mininet
 
     ```sh
     sudo ./run_mininet.py topos/single_sw.topo -a
     ```
 
-- To start all iperf servers: 
+- Start all iperf servers: 
 
     ```sh
     time
@@ -25,7 +25,7 @@
 
     ```
 
-- To start a iperf client:
+- Start a iperf client:
 
     ```sh
     time
@@ -34,7 +34,7 @@
 
     ```
 
-- To ping a host from another host:
+- Ping a host from another host:
     ```sh
     time
     h1 ping -c30 h4 > latency_h1_h4.txt &
@@ -42,13 +42,15 @@
     
     ```
 
-- To clean all tmp files:
+- Clean all tmp files and kill background processes:
 
     ```sh
     sudo mn -c
+    sudo killall -9 java
+    sudo killall -9 python
     ```
 
- - To start switch with route table and ARP cache
+ - Start switch with route table and ARP cache
  
     ```sh
     java -jar VirtualNetwork.jar -v s1 &
@@ -58,7 +60,7 @@
     java -jar VirtualNetwork.jar -v s5 &
     ```
 
- - To start router with route table
+ - Start router with route table
 
     ```sh
     java -jar VirtualNetwork.jar -v r1 -r rtable.r1 &
@@ -68,7 +70,7 @@
     java -jar VirtualNetwork.jar -v r5 -r rtable.r5 &
     ```
     
- - To start router with ARP cache
+ - Start router with ARP cache
 
     ```sh
    	java -jar VirtualNetwork.jar -v r1 -a arp_cache &
@@ -78,7 +80,7 @@
     java -jar VirtualNetwork.jar -v r5 -a arp_cache &
     ```
     
-- To start router
+- Start router
     
     ```sh
     java -jar VirtualNetwork.jar -v r1 &
@@ -88,15 +90,21 @@
     java -jar VirtualNetwork.jar -v r5 &
     ```
 
-- To dump the flow table
+- Dump the flow table
 
     ```sh
     sudo ovs-ofctl -O OpenFlow13 dump-flows s2
     ```
     
-- To turn down a switch
+- Turn down a switch
 
 
     ```sh
     sudo ovs-vsctl del-br s1
+    ```
+
+- See which packets a host is sending/recieving
+
+    ```sh
+    tcpdump -v -n -i hN-eth0
     ```
