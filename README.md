@@ -1,4 +1,15 @@
-# CS640
+# CS640: Computer Networks
+
+
+| Project            | Documents     | Code     | 
+| -- | -- | -- |
+| Sockets, Mininet & Performance | | 
+| Link & Network Layer Forwarding  | 
+| ARP, ICMP & RIP  | 
+| Software Defined Networking | 
+| Flow Control & DNS    | 
+
+
  
 ### Some useful commands
 
