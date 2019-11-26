@@ -1,13 +1,13 @@
 # CS640: Computer Networks
 
 
-| Project            | Documents     | Code     | 
+| Name            | Description     | Code     | 
 | -- | -- | -- |
-| Sockets, Mininet & Performance | | 
-| Link & Network Layer Forwarding  | 
-| ARP, ICMP & RIP  | 
-| Software Defined Networking | 
-| Flow Control & DNS    | 
+| Sockets, Mininet & Performance | http://pages.cs.wisc.edu/~akella/CS640/F19/assignment1/ | 
+| Link & Network Layer Forwarding  | http://pages.cs.wisc.edu/~akella/CS640/F19/assignment2/ |
+| ARP, ICMP & RIP  | http://pages.cs.wisc.edu/~akella/CS640/F19/assignment3/ | 
+| Software Defined Networking | http://pages.cs.wisc.edu/~akella/CS640/F19/assignment4/ |
+| Flow Control & DNS    | http://pages.cs.wisc.edu/~akella/CS640/F19/assignment5/ | 
 
 
  
