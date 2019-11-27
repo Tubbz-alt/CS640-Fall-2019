@@ -49,6 +49,7 @@ class SWPPacket:
     def __str__(self):
         return "%s %d %s" % (self._type.name, self._seq_num, repr(self._data))
 
+
 class SWPSender:
     _SEND_WINDOW_SIZE = 5
     _TIMEOUT = 1
@@ -63,8 +64,8 @@ class SWPSender:
 
         self._sequence_number = 0
         self._semaphore = threading.Semaphore(self._SEND_WINDOW_SIZE)
-        self.timers = dict()
-        self.buffer = dict()
+        self._timers = dict()
+        self._buffer = dict()
 
     def send(self, data):
         for i in range(0, len(data), SWPPacket.MAX_DATA_SIZE):
@@ -73,10 +74,10 @@ class SWPSender:
     def _create_timer(self, seq_num):
         timer = threading.Timer(self._TIMEOUT, self._retransmit, [seq_num])
         timer.start()
-        self.timers[seq_num] = timer
+        self._timers[seq_num] = timer
 
     def _transmit(self, seq_num):
-        self._llp_endpoint.send(self.buffer[seq_num])
+        self._llp_endpoint.send(self._buffer[seq_num])
 
     def _send(self, data):
         # 1. Wait for a free space in the send window
@@ -87,7 +88,7 @@ class SWPSender:
         self._sequence_number += 1
 
         # 3. Add the chunk of data to a buffer
-        self.buffer[seq_num] = SWPPacket(
+        self._buffer[seq_num] = SWPPacket(
             type=SWPType.DATA,
             seq_num=seq_num,
             data=data
@@ -102,7 +103,6 @@ class SWPSender:
     def _retransmit(self, seq_num):
         self._transmit(seq_num)
         self._create_timer(seq_num)
-        return
 
     def _recv(self):
         while True:
@@ -119,17 +119,16 @@ class SWPSender:
             seq_num = packet.seq_num
 
             # 1. Cancel the retransmission timer for that chunk of data.
-            if seq_num in self.timers:
-                self.timers.pop(seq_num).cancel()
+            if seq_num in self._timers:
+                self._timers.pop(seq_num).cancel()
 
             # 2. Discard that chunk of data.
-            if seq_num in self.buffer:
-                self.buffer.pop(seq_num)
+            if seq_num in self._buffer:
+                self._buffer.pop(seq_num)
 
             # 3. Signal that there is now a free space in the send window.
             self._semaphore.release()
 
-        return
 
 class SWPReceiver:
     _RECV_WINDOW_SIZE = 5
@@ -145,8 +144,16 @@ class SWPReceiver:
         self._recv_thread = threading.Thread(target=self._recv)
         self._recv_thread.start()
 
-        # TODO: Add additional state variables
+        self._highest_acknowledged_sequence_number = 0
+        self._buffer = dict()
 
+    def send_ack(self):
+        packet = SWPPacket(
+            type=SWPType.ACK,
+            seq_num=self._highest_acknowledged_sequence_number,
+        )
+
+        self._llp_endpoint.send(packet.to_bytes())
 
     def recv(self):
         return self._ready_data.get()
@@ -158,6 +165,32 @@ class SWPReceiver:
             packet = SWPPacket.from_bytes(raw)
             logging.debug("Received: %s" % packet)
 
-            # TODO
+            if packet.type != SWPType.DATA:
+                continue
 
-        return
+            seq_num = packet.seq_num
+
+            # 1. Check if the chunk of data was already acknowledged and
+            #    retransmit an SWP ACK containing the highest acknowledged sequence number
+            if seq_num < self._highest_acknowledged_sequence_number:
+                self.send_ack()
+                continue
+
+            # 2. Add the chunk of data to a buffer
+            self._buffer[seq_num] = packet.data
+
+            # 3. Traverse the buffer
+            seq_nums = sorted(self._buffer)
+            for seq_num_1, seq_num_2 in zip(seq_nums, seq_nums[1:]):
+                if seq_num_1 + 1 != seq_num_2:
+                    self._highest_acknowledged_sequence_number = seq_num_1
+                    break
+                self._ready_data.put(self._buffer.pop(seq_num_1))
+
+            # 4. Send an acknowledgement for the highest sequence number
+            self.send_ack()
+
+
+
+
+
