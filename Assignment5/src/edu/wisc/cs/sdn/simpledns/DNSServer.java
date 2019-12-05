@@ -70,8 +70,11 @@ class DNSServer {
             for (DNSResourceRecord answer : responseDNSPacket.getAnswers()) {
                 if (answer.getType() == inQuestion.getType()) {
                     returnDNSPacket.addAnswer(answer);
-                    if (answer.getType() == DNS.TYPE_A)
-                        addEc2TXT(returnDNSPacket, answer);
+                    if (answer.getType() == DNS.TYPE_A) {
+                        String hostAddress = ((DNSRdataAddress) answer.getData()).getAddress().getHostAddress();
+                        String hostName = inQuestion.getName();
+                        addEc2TXT(returnDNSPacket, hostAddress, hostName);
+                    }
                     found = true;
                 } else if (answer.getType() == DNS.TYPE_CNAME) {
                     returnDNSPacket.addAnswer(answer);
@@ -129,12 +132,11 @@ class DNSServer {
         return null;
     }
 
-    private void addEc2TXT(DNS returnDNSPacket, DNSResourceRecord answer) {
-        String address = ((DNSRdataAddress) answer.getData()).getAddress().getHostAddress();
+    private void addEc2TXT(DNS returnDNSPacket, String hostAddress, String hostName) {
         for (Subnet subnet : this.ec2Region) {
-            if (!subnet.inRange(address)) continue;
-            DNSRdataString string = new DNSRdataString(subnet.toString(address));
-            DNSResourceRecord record = new DNSResourceRecord(answer.getName(), DNS.TYPE_TXT, string);
+            if (!subnet.inRange(hostAddress)) continue;
+            DNSRdataString string = new DNSRdataString(subnet.toString(hostAddress));
+            DNSResourceRecord record = new DNSResourceRecord(hostName, DNS.TYPE_TXT, string);
             returnDNSPacket.addAnswer(record);
             return;
         }
