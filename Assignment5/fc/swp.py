@@ -77,7 +77,7 @@ class SWPSender:
         self._timers[seq_num] = timer
 
     def _transmit(self, seq_num):
-        self._llp_endpoint.send(self._buffer[seq_num])
+        self._llp_endpoint.send(self._buffer[seq_num].to_bytes())
 
     def _send(self, data):
         # 1. Wait for a free space in the send window
@@ -94,11 +94,12 @@ class SWPSender:
             data=data
         )
 
-        # 4. Send the data in an SWP packet
+        # 4. Start a retransmission timer
+        self._create_timer(seq_num)
+
+        # 5. Send the data in an SWP packet
         self._transmit(seq_num)
 
-        # 5. Start a retransmission timer
-        self._create_timer(seq_num)
 
     def _retransmit(self, seq_num):
         self._transmit(seq_num)
@@ -110,6 +111,7 @@ class SWPSender:
             raw = self._llp_endpoint.recv()
             if raw is None:
                 continue
+            
             packet = SWPPacket.from_bytes(raw)
             logging.debug("Received: %s" % packet)
 
