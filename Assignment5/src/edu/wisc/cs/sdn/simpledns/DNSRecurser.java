@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 class DNSRecurser {
-    private final int MAX_DEPTH = 32;
+    private final int MAX_DEPTH = 64;
     private DNS origPacket;
     private int currentDepth = 0;
 
