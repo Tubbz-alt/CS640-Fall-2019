@@ -9,7 +9,9 @@ import java.util.Collections;
 import java.util.List;
 
 class DNSRecurser {
+    private final int MAX_DEPTH = 32;
     private DNS origPacket;
+    private int currentDepth = 0;
 
     DNSRecurser(DNS origPacket) {
         this.origPacket = origPacket;
@@ -17,6 +19,8 @@ class DNSRecurser {
 
     DNS recurse(InetAddress dnsServer, DNSQuestion question) throws IOException {
         DNS resultPacket = createNewPacket(question);
+        if (currentDepth++ > MAX_DEPTH) return resultPacket;
+
         DNS responsePacket = DNSServer.askDNSServer(dnsServer, resultPacket);
 
         // Check answer
