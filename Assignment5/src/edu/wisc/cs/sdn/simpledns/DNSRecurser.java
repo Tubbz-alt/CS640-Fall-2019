@@ -15,69 +15,59 @@ class DNSRecurser {
         this.origPacket = origPacket;
     }
 
-    DNS recurse(InetAddress dnsServer) throws IOException {
-        return recurse(dnsServer, origPacket.getQuestions().get(0));
-    }
-
-    DNS createNewPacket(DNSQuestion question) {
-        DNS newPacket = origPacket.clone();
-        origPacket.setQuestions(Collections.singletonList(question));
-        return newPacket;
-    }
-
-    private DNS recurse(InetAddress dnsServer, DNSQuestion question) throws IOException {
-        DNS returnDNSPacket = createNewPacket(question);
-        DNS responseDNSPacket = DNSServer.askDNSServer(dnsServer, returnDNSPacket);
+    DNS recurse(InetAddress dnsServer, DNSQuestion question) throws IOException {
+        DNS resultPacket = createNewPacket(question);
+        DNS responsePacket = DNSServer.askDNSServer(dnsServer, resultPacket);
 
         // Check answer
         boolean found = false;
-        for (DNSResourceRecord answer : responseDNSPacket.getAnswers()) {
+        for (DNSResourceRecord answer : responsePacket.getAnswers()) {
             if (answer.getType() == question.getType()) {
-                returnDNSPacket.addAnswer(answer);
+                resultPacket.addAnswer(answer);
                 if (answer.getType() == DNS.TYPE_A) {
                     String hostAddress = getAddressFromRecord(answer).getHostAddress();
-                    addEc2TXT(returnDNSPacket, hostAddress);
+                    addEc2TXT(resultPacket, hostAddress);
                 }
                 found = true;
             } else if (answer.getType() == DNS.TYPE_CNAME) {
-                returnDNSPacket.addAnswer(answer);
+                resultPacket.addAnswer(answer);
             }
         }
-        if (found) return returnDNSPacket;
+        if (found) return resultPacket;
 
-        for (DNSResourceRecord answer : new ArrayList<>(responseDNSPacket.getAnswers())) {
+        for (DNSResourceRecord answer : new ArrayList<>(resultPacket.getAnswers())) {
             if (!answer.getName().equals(question.getName()))
-                responseDNSPacket.getAnswers().remove(answer);
+                resultPacket.getAnswers().remove(answer);
         }
 
         // Check CNAME
-        for (DNSResourceRecord answer : responseDNSPacket.getAnswers()) {
+        for (DNSResourceRecord answer : responsePacket.getAnswers()) {
             if (answer.getType() != DNS.TYPE_CNAME) continue;
             if (!answer.getName().equals(question.getName())) continue;
             String name = ((DNSRdataName) answer.getData()).getName();
-            DNS f = recurse(DNSServer.rootServer, new DNSQuestion(name, question.getType()));
-            for (DNSResourceRecord ans : f.getAnswers()) {
-                returnDNSPacket.addAnswer(ans);
+            DNS newResponse = recurse(DNSServer.rootServer, new DNSQuestion(name, question.getType()));
+            for (DNSResourceRecord ans : newResponse.getAnswers()) {
+                resultPacket.addAnswer(ans);
             }
-            return returnDNSPacket;
+            return resultPacket;
         }
 
-        List<DNSResourceRecord> authorities = new ArrayList<>(responseDNSPacket.getAuthorities());
+        List<DNSResourceRecord> authorities = new ArrayList<>(responsePacket.getAuthorities());
 
         // Check Authorities in Additional Section
-        for (DNSResourceRecord authority : responseDNSPacket.getAuthorities()) {
+        for (DNSResourceRecord authority : responsePacket.getAuthorities()) {
             if (authority.getType() != DNS.TYPE_NS) continue;
             String name = ((DNSRdataName) authority.getData()).getName();
-            InetAddress address = findNameServerAddressInAdditional(name, responseDNSPacket);
+            InetAddress address = findNameServerAddressInAdditional(name, responsePacket);
 
-            if (address == null)// cannot find in the additional section
+            if (address == null) // cannot find in the additional section
                 continue;
 
             authorities.remove(authority);
-            DNS responsePacket = recurse(address);
-            for (DNSResourceRecord answer : responsePacket.getAnswers()) {
+            DNS newPacket = recurse(address, question);
+            for (DNSResourceRecord answer : newPacket.getAnswers()) {
                 if (answer.getType() == question.getType())
-                    return responsePacket;
+                    return newPacket;
             }
         }
 
@@ -89,14 +79,14 @@ class DNSRecurser {
             InetAddress address = getARecordFromDNSPacket(newResponse);
             if (address == null) // cannot find the Authorities' IP from Root
                 continue;
-            DNS responsePacket = recurse(address);
-            for (DNSResourceRecord answer : responsePacket.getAnswers()) {
+            DNS newPacket = recurse(address, question);
+            for (DNSResourceRecord answer : newPacket.getAnswers()) {
                 if (answer.getType() == question.getType())
-                    return responsePacket;
+                    return newPacket;
             }
         }
 
-        return returnDNSPacket;
+        return origPacket;
     }
 
     private InetAddress getAddressFromRecord(DNSResourceRecord answer) {
@@ -131,5 +121,12 @@ class DNSRecurser {
             returnDNSPacket.addAnswer(record);
             return;
         }
+    }
+
+    private DNS createNewPacket(DNSQuestion question) {
+        DNS newPacket = origPacket.clone();
+        newPacket.setQuestions(Collections.singletonList(question));
+        newPacket.setRecursionDesired(false);
+        return newPacket;
     }
 }
