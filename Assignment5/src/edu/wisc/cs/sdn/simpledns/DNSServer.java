@@ -68,7 +68,8 @@ class DNSServer {
             case DNS.TYPE_NS:
             case DNS.TYPE_CNAME:
                 if (inDNSPacket.isRecursionDesired()) {
-                    DNS packet = new DNSRecurser(inDNSPacket).recurse(DNSServer.rootServer);
+                    DNSQuestion question =  inDNSPacket.getQuestions().get(0);
+                    DNS packet = new DNSRecurser(inDNSPacket).recurse(DNSServer.rootServer, question);
                     sendDNSPacket(this.clientSocket, packet);
                 } else {
                     sendDNSPacket(this.clientSocket, askDNSServer(rootServer, inDNSPacket));
