@@ -75,6 +75,7 @@ class SWPSender:
         timer = threading.Timer(self._TIMEOUT, self._retransmit, [seq_num])
         timer.start()
         self._timers[seq_num] = timer
+        logging.debug("Timer " + str(seq_num) + " created")
 
     def _transmit(self, seq_num):
         self._llp_endpoint.send(self._buffer[seq_num].to_bytes())
@@ -102,8 +103,9 @@ class SWPSender:
 
 
     def _retransmit(self, seq_num):
-        self._transmit(seq_num)
+        logging.debug("Retransmit " + str(seq_num) + " called")
         self._create_timer(seq_num)
+        self._transmit(seq_num)
 
     def _recv(self):
         while True:
@@ -121,8 +123,10 @@ class SWPSender:
             seq_num = packet.seq_num
 
             # 1. Cancel the retransmission timer for that chunk of data.
-            if seq_num in self._timers:
-                self._timers.pop(seq_num).cancel()
+            for i in list(self._timers.keys()):
+                if i <= seq_num and i in self._timers:
+                    self._timers.pop(i).cancel()
+                    logging.debug("Timer " + str(i) + " cancalled")
 
             # 2. Discard that chunk of data.
             if seq_num in self._buffer:
