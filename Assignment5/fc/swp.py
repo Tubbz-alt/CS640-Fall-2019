@@ -113,7 +113,7 @@ class SWPSender:
             raw = self._llp_endpoint.recv()
             if raw is None:
                 continue
-            
+
             packet = SWPPacket.from_bytes(raw)
             logging.debug("Received: %s" % packet)
 
@@ -150,13 +150,13 @@ class SWPReceiver:
         self._recv_thread = threading.Thread(target=self._recv)
         self._recv_thread.start()
 
-        self._highest_acknowledged_sequence_number = 0
+        self._highest_seq_num = 0
         self._buffer = dict()
 
     def send_ack(self):
         packet = SWPPacket(
             type=SWPType.ACK,
-            seq_num=self._highest_acknowledged_sequence_number,
+            seq_num=self._highest_seq_num,
         )
 
         self._llp_endpoint.send(packet.to_bytes())
@@ -178,7 +178,7 @@ class SWPReceiver:
 
             # 1. Check if the chunk of data was already acknowledged and
             #    retransmit an SWP ACK containing the highest acknowledged sequence number
-            if seq_num < self._highest_acknowledged_sequence_number:
+            if seq_num < self._highest_seq_num:
                 self.send_ack()
                 continue
 
@@ -186,17 +186,12 @@ class SWPReceiver:
             self._buffer[seq_num] = packet.data
 
             # 3. Traverse the buffer
-            seq_nums = sorted(self._buffer)
-            for seq_num_1, seq_num_2 in zip(seq_nums, seq_nums[1:]):
-                if seq_num_1 + 1 != seq_num_2:
-                    self._highest_acknowledged_sequence_number = seq_num_1
-                    break
-                self._ready_data.put(self._buffer.pop(seq_num_1))
-
+            for i in range(self._highest_seq_num, self._highest_seq_num + len(self._buffer)):
+                if i not in self._buffer:
+                    continue
+                self._highest_seq_num = i
+                self._ready_data.put(self._buffer.pop(i))
+                
             # 4. Send an acknowledgement for the highest sequence number
-            self.send_ack()
-
-
-
-
-
+            if seq_num == self._highest_seq_num:
+                self.send_ack()
