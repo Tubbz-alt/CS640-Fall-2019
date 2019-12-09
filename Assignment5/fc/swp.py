@@ -150,7 +150,7 @@ class SWPReceiver:
         self._recv_thread = threading.Thread(target=self._recv)
         self._recv_thread.start()
 
-        self._highest_seq_num = 0
+        self._highest_seq_num = -1
         self._buffer = dict()
 
     def send_ack(self):
@@ -160,6 +160,8 @@ class SWPReceiver:
         )
 
         self._llp_endpoint.send(packet.to_bytes())
+
+        logging.debug("Receiver sent ACK " + str(self._highest_seq_num))
 
     def recv(self):
         return self._ready_data.get()
@@ -186,12 +188,14 @@ class SWPReceiver:
             self._buffer[seq_num] = packet.data
 
             # 3. Traverse the buffer
-            for i in range(self._highest_seq_num, self._highest_seq_num + len(self._buffer)):
+            for i in range(self._highest_seq_num + 1, self._highest_seq_num + 1 + len(self._buffer)):
                 if i not in self._buffer:
                     continue
                 self._highest_seq_num = i
                 self._ready_data.put(self._buffer.pop(i))
+                logging.debug("Data " + str(i) + " is ready")
                 
+            logging.debug("Highest sequence number is now " + str(self._highest_seq_num))
             # 4. Send an acknowledgement for the highest sequence number
             if seq_num == self._highest_seq_num:
                 self.send_ack()
