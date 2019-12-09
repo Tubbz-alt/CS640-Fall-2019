@@ -70,6 +70,7 @@ class DNSServer {
                 if (inDNSPacket.isRecursionDesired()) {
                     DNSQuestion question =  inDNSPacket.getQuestions().get(0);
                     DNS packet = new DNSRecurser(inDNSPacket).recurse(DNSServer.rootServer, question);
+                    packet.setQuery(false);
                     sendDNSPacket(this.clientSocket, packet);
                 } else {
                     sendDNSPacket(this.clientSocket, askDNSServer(rootServer, inDNSPacket));
